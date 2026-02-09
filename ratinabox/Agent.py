@@ -650,11 +650,13 @@ class Agent:
                 self.pos_interp = interp1d(
                     times, positions, axis=0, kind="cubic", fill_value="extrapolate"
                 )
+                self.pos = self.pos_interp(0) # fix: set initial position to the start of the trajectory
             else:
                 self.positions = positions
                 self.times = times
                 self.imported_trajectory_id = 0
-        self.pos = self.pos_interp(0)
+                self.pos = self.positions[0] #fix: set initial position to the start of the trajectory
+        
         self.prev_pos = self.pos.copy()
         return
 
