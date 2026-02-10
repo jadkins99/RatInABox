@@ -13,6 +13,7 @@ class BaseActorCritic(NeuralNetworkNeurons):
         "input_layers": [],  # a list of input layers, each must be a ratinabox.Neurons class
         "NeuralNetworkModule": None, #Any torch nn.Sequential or nn.Module with a .forward() method
         "optimizer": lambda params: torch.optim.SGD(params, lr=0.01,  maximize=True, weight_decay=0.000), #The optimizer to use (in practise I've tried Adam but it aint great). Also, remember this must maximize not minimize. 
+        "eligibility_traces": False, 
         }
 
     def __init__(self, Agent, params={}):
@@ -20,9 +21,15 @@ class BaseActorCritic(NeuralNetworkNeurons):
         self.params = __class__.default_params.copy()
         self.params.update(params)
         super().__init__(Agent, self.params)
-        self.initialise_traces()
+
+        self.use_eligibility_traces = self.params["eligibility_traces"]
+
+        if self.use_eligibility_traces:
+            self.initialise_traces()
+
         self.firingrate = self.get_state(save_torch=True) 
         self.firingrate_last = self.firingrate
+
         if self.params["optimizer"] is not None:
             self.optimizer = self.params["optimizer"](self.NeuralNetworkModule.parameters())
         return  
@@ -37,8 +44,18 @@ class BaseActorCritic(NeuralNetworkNeurons):
 
     def _train_step(self, L, td_error):
         """Implements a full training step: calculates the gradients, updates the traces then steps the optimizer"""
+
+        # self.optimizer.zero_grad()
         self._calculate_gradients(L = L)
-        self._update_traces(td_error = td_error)
+
+        if self.use_eligibility_traces:
+            self._update_traces(td_error=td_error)
+        else:
+            dt = self.Agent.dt
+            for param in self.NeuralNetworkModule.parameters():
+                if param.grad is not None:
+                    param.grad = param.grad.detach() * td_error * dt
+        
         self.optimizer.step()
         return
     
@@ -91,7 +108,7 @@ class Actor(BaseActorCritic):
     
 # CRITIC
 class FTANetwork(nn.Module):
-    """A generic ReLU neural network class, default used for the core function in NeuralNetworkNeurons. 
+    """A FTA neural network class, default used for the core function in NeuralNetworkNeurons. 
     Specify input size, output size and hidden layer sizes (a list). Biases are used by default.
 
     Args:
@@ -172,11 +189,10 @@ class VxVyGaussian:
     
 class VxVyGaussianFTU(VxVyGaussian, FTANetwork):
     
-    def __init__(self,n_in,
-                 max_speed=0.5,):
+    def __init__(self,n_in, post_fta, max_speed=0.5,):
         self.n = 2
         self.max_speed = max_speed
-        super().__init__(n_in = n_in,n_out=2,pre_fta=[20],post_fta=[20])
+        super().__init__(n_in = n_in,post_fta=post_fta)
 
 class VxVyGaussianMLP(VxVyGaussian,MultiLayerPerceptron):
     """In this instance, the output of the actor is a 2 dimensional vector representing the mean of v_x and the mean of v_y (each will then be sampled from a gaussian with the same variance)."""
