@@ -83,6 +83,7 @@ class FTA(nn.Module):
         tile_delta = (input_max - input_min) / n_tile
         if n_tilings == 1:
             one_c = np.linspace(input_min, input_max, n_tile, endpoint=False).astype(np.float32)
+            # tile_delta = one_c[1] - one_c[0] # added to ensure consistency with original code
             # Ensure shape is compatible for broadcasting
             return one_c, tile_delta, input_min, input_max
         
@@ -94,7 +95,51 @@ class FTA(nn.Module):
         # This part of the logic handles generating the list, 
         # but the actual buffer registration happens in __init__
         # Simplified here to return what is needed for single tiling as that is the standard path
-        return None 
+
+        # added following code because the original code had it
+        # c_list = []
+        # for n in range(n_tilings):
+        #     step = tiling_length / n_tile
+        #     one_c = torch.arange(startc[n], startc[n] + tiling_length, step, dtype=torch.float32)
+        #     c_list.append(one_c)
+        # tiling_low_bound = np.min(startc) - maxoffset
+        # tiling_up_bound = np.max(startc) + tiling_length
+        # return c_list, tile_delta, tiling_low_bound, tiling_up_bound
+        return None
+        
+    # def get_multi_tilings(self, n_tilings, n_tile):
+    #     input_max_list = np.random.choice(self.config.fta_input_max, n_tilings)
+
+    #     c_list = []
+    #     tile_delta_list = []
+
+    #     for n in range(n_tilings):
+    #         ind = n % len(input_max_list)
+
+    #         one_c = np.linspace(
+    #             -input_max_list[ind],
+    #             input_max_list[ind],
+    #             n_tile,
+    #             endpoint=False
+    #         ).astype(np.float32)
+
+    #         # Equivalent to tf.constant(...).reshape((-1, n_tile))
+    #         one_c_tensor = torch.tensor(one_c.copy(), dtype=torch.float32).reshape(-1, n_tile)
+
+    #         c_list.append(one_c_tensor)
+
+    #         tile_delta_list.append(one_c[1] - one_c[0])
+
+    #     # Equivalent to tf.concat(axis=0)
+    #     c_mat = torch.cat(c_list, dim=0)
+
+    #     # Equivalent to tf.reshape(..., [n_tilings, 1])
+    #     tile_delta_vector = torch.tensor(
+    #         np.array(tile_delta_list).astype(np.float32),
+    #         dtype=torch.float32
+    #     ).reshape(n_tilings, 1)
+
+    #     return c_mat, tile_delta_vector
 
     def get_multi_tilings(self, n_tilings, n_tile):
         # Handle fta_input_max list logic
