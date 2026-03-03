@@ -36,10 +36,11 @@ class BaseActorCritic(NeuralNetworkNeurons):
     
     def initialise_traces(self):
         """We maintain a trace of the gradients for all parameters in the network. This function initialises the traces to zero."""
-        self.traces = []
-        for (i,param) in enumerate(self.NeuralNetworkModule.parameters()):
-            shape = param.detach().numpy().shape #one trace in total 
-            self.traces.append(np.zeros(shape))
+        if self.use_eligibility_traces:
+            self.traces = []
+            for (i,param) in enumerate(self.NeuralNetworkModule.parameters()):
+                shape = param.detach().numpy().shape #one trace in total 
+                self.traces.append(np.zeros(shape))
         return   
 
     def _train_step(self, L, td_error):
