@@ -5,32 +5,14 @@ from ratinabox.Agent import Agent
 from ratinabox.contribs.TaskEnvironment import (SpatialGoalEnvironment, SpatialGoal, Reward)
 from plotting_utils import *
 
-def generate_navigation_task_env(dt=0.1,reward = 1, reward_duration=1, goal_pos=np.array([0.5, 0.05]), goal_radius=0.001, wall=None):
-    # Make the environment and add a wall 
-    env = SpatialGoalEnvironment(
-        dt=dt,
-        teleport_on_reset=True,
-        episode_terminate_delay=reward_duration,)
-    env.exploration_strength = 1 
-    if wall is not None: env.add_wall(wall)
-    #Make the reward which is given when a spatial goal is satisfied. Attached this goal to the environment
-    reward = Reward(reward,decay="none",expire_clock=reward_duration,dt=dt,)
-    goals = [SpatialGoal(env,pos=goal_pos,goal_radius=goal_radius, reward=reward)]
-    env.goal_cache.reset_goals = goals 
-    #Recruit the agent and add it to environment
-    ag = Agent(env,params={'dt':dt})
-    env.add_agents(ag) #<-- this updates the agent creating an off by one error 
-
-    return env, ag
-
-
 def run_episode(env, 
                 ag, 
                 actor, 
                 critic,
+                seed,
                 state_cells = [],
                 time_limit=15,
-                egocentric_actions = False,):
+                egocentric_actions = False):
     
     """Run an episode of the agent in the environment.
     Returns 1 if the episode timed out, 0 otherwise.
@@ -60,10 +42,10 @@ def run_episode(env,
 
         # CHECK IF THE EPISODE IS OVER
         if env.t - env.episodes['start'][-1] > time_limit: 
-            env.reset(episode_meta_info="timeout")
+            env.reset(episode_meta_info="timeout", seed = seed)
             return
         elif terminate_episode:
-            env.reset(episode_meta_info="completed")
+            env.reset(episode_meta_info="completed", seed = seed)
             return
         
 def train_agent_episodes(
@@ -83,8 +65,6 @@ def train_agent_episodes(
     Runs training episodes and stops early if performance threshold is reached.
 
     """
-    np.random.seed(seed)
-    random.seed(seed)
 
     try:
         for i in (pbar := tqdm(range(n_episodes))):
@@ -95,7 +75,8 @@ def train_agent_episodes(
                 actor,
                 critic,
                 state_cells=[placecells],
-                time_limit= time_limit
+                time_limit= time_limit,
+                seed = i
             )
 
             success_frac = np.mean(

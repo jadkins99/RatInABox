@@ -6,15 +6,6 @@ from fta import FTA
 
 class BaseActorCritic(NeuralNetworkNeurons):
     """Since actors and critics have similar learning rules and trace updates we share some logic here. This is a RatInABox Neurons subclass so you can query rate maps with `.plot_rate_map()` and see history in `.history`"""
-    
-    default_params = {
-        "tau": 5, #The time horizon of the value function 
-        "tau_z": 5, #The time horizon of the eligibility trace
-        "input_layers": [],  # a list of input layers, each must be a ratinabox.Neurons class
-        "NeuralNetworkModule": None, #Any torch nn.Sequential or nn.Module with a .forward() method
-        "optimizer": lambda params: torch.optim.SGD(params, lr=0.01,  maximize=True, weight_decay=0.000), #The optimizer to use (in practise I've tried Adam but it aint great). Also, remember this must maximize not minimize. 
-        "eligibility_traces": False, 
-        }
 
     def __init__(self, Agent, params={}):
         """Initialise the actor or critic neurons. Provide the Agent and any parameters which must include the pytorch nn.Module to use as the neural network and a list of Neurons which act as the input layers."""
@@ -84,7 +75,9 @@ class BaseActorCritic(NeuralNetworkNeurons):
 # The actor and critic only different slightly in their .update() functions so we can inherit from the same base class
 
 class Critic(BaseActorCritic):    
-    default_params = {} # see BaseActorCritic for the default params
+    def __init__(self, Agent, params={}):
+        super().__init__(Agent, params) 
+
     def update(self, reward, train=True):
         """Accepts the reward just observed, calcuates the TD error, then updates the weights based on the gradient of its firing rate and the TD error. Finally, it updates the firing rate to reflect to new position of the Agent."""
         self._update_td_error(reward) 
@@ -100,7 +93,9 @@ class Critic(BaseActorCritic):
         return
 
 class Actor(BaseActorCritic):
-    default_params = {} # see BaseActorCritic for the default params
+    def __init__(self, Agent, params={}):
+        super().__init__(Agent, params)
+     # see BaseActorCritic for the default params
     def update(self, log_prob=None, td_error=None, train=True):
         """Accepts the (differentiable) log probability of the action just taken and the critic's latest TD error them updates the weights based on the gradient of the log probability and the TD error. Finally, it updates the firing rate to reflect to new position of the Agent."""
         if train: super()._train_step(L = log_prob, td_error = td_error)#does learning on the weights #does learning on the weights
