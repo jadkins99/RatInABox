@@ -5,7 +5,7 @@ from ratinabox.Agent import Agent
 from ratinabox.contribs.TaskEnvironment import (SpatialGoalEnvironment, SpatialGoal, Reward)
 from plotting_utils import *
 
-def run_episode(env, 
+def run_episode(env : SpatialGoalEnvironment, 
                 ag, 
                 actor, 
                 critic,
@@ -39,13 +39,14 @@ def run_episode(env,
         # UPDATE THE CRITIC AND ACTOR (INCLUDING LEARNING)
         critic.update(reward=reward)
         actor.update(log_prob=log_prob, td_error=critic.td_error)
+        initial_pos = np.array([0.05,0.05])
 
         # CHECK IF THE EPISODE IS OVER
         if env.t - env.episodes['start'][-1] > time_limit: 
-            env.reset(episode_meta_info="timeout", seed = seed)
+            env.reset(initial_pos=initial_pos,episode_meta_info="timeout", seed = seed)
             return
         elif terminate_episode:
-            env.reset(episode_meta_info="completed", seed = seed)
+            env.reset(initial_pos=initial_pos,episode_meta_info="completed", seed = seed)
             return
         
 def train_agent_episodes(
@@ -67,8 +68,9 @@ def train_agent_episodes(
     """
 
     try:
-        for i in (pbar := tqdm(range(n_episodes))):
-
+        # for i in (pbar := tqdm(range(n_episodes))):
+        for i in range(n_episodes):
+    
             run_episode(
                 env,
                 ag,
@@ -87,10 +89,10 @@ def train_agent_episodes(
                 env.episodes["duration"][-success_window:]
             )
 
-            pbar.set_description(
-                f"<success fraction>: {success_frac:.2f}, "
-                f"<episode time>: {episode_time:.1f}"
-            )
+            # pbar.set_description(
+            #     f"<success fraction>: {success_frac:.2f}, "
+            #     f"<episode time>: {episode_time:.1f}"
+            # )
 
             if success_frac > success_threshold and i > min_episodes_before_stop:
                 break

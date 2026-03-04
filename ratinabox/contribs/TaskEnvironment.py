@@ -110,6 +110,7 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
         self.teleport_on_reset = teleport_on_reset  # Whether to teleport
         # agents to random
 
+
         # ----------------------------------------------
         # Setup gym primatives
         # ----------------------------------------------
@@ -304,8 +305,9 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
         """Seed the random number generator"""
         np.random.seed(seed)
 
-    def reset(self, seed=None, episode_meta_info=False, options=None):
+    def reset(self,initial_pos=None,seed=None, episode_meta_info=False, options=None):
         """How to reset the task when finished"""
+        print("Resetting environment")
         if seed is not None:
             self.seed(seed)
         if self.verbose:
@@ -319,13 +321,17 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
         # Clear rendering cache
         self.clear_render_cache()
 
+        # if initial_pos:
+        #     for agent_name, agent in self.Ags.items():
+        #         agent.pos = initial_pos
         # If teleport on reset, randomly pick new location for agents
         if self.teleport_on_reset:
             for agent_name, agent in self.Ags.items():
                 # agent.update()
-                agent.pos = self.sample_positions(1)[
-                    0
-                ]  # random position in the environment
+                # agent.pos = self.sample_positions(1)[
+                #     0
+                # ]  # random position in the environment
+                agent.pos = initial_pos if initial_pos is not None else self.sample_positions(1)[0]
                 if len(agent.history["pos"]) > 0:
                     agent.history["pos"][-1] = agent.pos
 
@@ -1476,7 +1482,7 @@ class SpatialGoalEnvironment(TaskEnvironment):
 
         resets the environement to a new episode
         """
-
+        print('hello')
         # How many goals to set?
         if goal_locations is not None:
             self.goal_cache.reset_n_goals = len(goal_locations)
@@ -1487,7 +1493,7 @@ class SpatialGoalEnvironment(TaskEnvironment):
             self.goal_cache.reset_goals = self._init_poss_goal_positions(
                 goal_locations
             )
-
+        print("Resetting from SpatialGoalEnvironment.reset()")
         # Reset the TaskEnvironment parent class (which picks new goals etc)
         # and returns pettingzoo.reset() required objects
         return super().reset(**kws)

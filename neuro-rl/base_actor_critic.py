@@ -124,7 +124,7 @@ class FTANetwork(nn.Module):
             layers.append(nn.Linear(n_pre[i],n_pre[i+1]))
             layers.append(nn.ReLU())
             
-        layers.append(FTA(params={'n_tiles':n_tiles, 'n_tilings':n_tilings, 'fta_input_min':input_min, 'fta_input_max':input_max, 'eta':eta}, input_dim=pre_fta[-1]))
+        layers.append(FTA(params={'n_tiles':n_tiles, 'n_tilings':n_tilings, 'fta_input_min':input_min, 'fta_input_max':input_max, 'fta_eta':eta}, input_dim=pre_fta[-1]))
         
         
         for i in range(len(n_post)-1):
@@ -183,7 +183,7 @@ class VxVyGaussian:
 
         return action.detach().cpu().numpy()[0], log_prob
     
-class VxVyGaussianFTU(VxVyGaussian, FTANetwork):
+class VxVyGaussianFTA(VxVyGaussian, FTANetwork):
     
     def __init__(self,n_in, post_fta, max_speed=0.5,):
         self.n = 2
