@@ -305,7 +305,7 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
         """Seed the random number generator"""
         np.random.seed(seed)
 
-    def reset(self,initial_pos=None,seed=None, episode_meta_info=False, options=None):
+    def reset(self,seed=None, episode_meta_info=False, options=None):
         """How to reset the task when finished"""
         print("Resetting environment")
         if seed is not None:
@@ -321,9 +321,6 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
         # Clear rendering cache
         self.clear_render_cache()
 
-        # if initial_pos:
-        #     for agent_name, agent in self.Ags.items():
-        #         agent.pos = initial_pos
         # If teleport on reset, randomly pick new location for agents
         if self.teleport_on_reset:
             for agent_name, agent in self.Ags.items():
@@ -331,7 +328,7 @@ class TaskEnvironment(Environment, pettingzoo.ParallelEnv):
                 # agent.pos = self.sample_positions(1)[
                 #     0
                 # ]  # random position in the environment
-                agent.pos = initial_pos if initial_pos is not None else self.sample_positions(1)[0]
+                agent.pos = self.sample_positions(1)[0]
                 if len(agent.history["pos"]) > 0:
                     agent.history["pos"][-1] = agent.pos
 
@@ -1473,6 +1470,58 @@ class SpatialGoalEnvironment(TaskEnvironment):
                 if isinstance(goal, SpatialGoal)
             ]
         )
+    def reset_initial_position(self, initial_position,goal_locations: Union[np.ndarray, None] = None, n_objectives=None, seed=None, episode_meta_info=None):
+
+        if goal_locations is not None:
+            self.goal_cache.reset_n_goals = len(goal_locations)
+        elif n_objectives is not None:
+            self.goal_cache.reset_n_goals = n_objectives
+        # Did user pass new goals?
+        if goal_locations is not None:
+            self.goal_cache.reset_goals = self._init_poss_goal_positions(
+                goal_locations
+            )
+
+        if seed is not None:
+            self.seed(seed)
+        if self.verbose:
+            print("Resetting")
+        if len(self.episodes["start"]) > 0:
+            self.write_end_episode(episode_meta_info=episode_meta_info)
+
+        # Reset active non-terminated agents
+        self.agents = copy(self.agent_names)
+
+        # Clear rendering cache
+        self.clear_render_cache()
+
+        # If teleport on reset, randomly pick new location for agents
+
+        for _, agent in self.Ags.items():
+            agent.pos = initial_position
+            if len(agent.history["pos"]) > 0:
+                agent.history["pos"][-1] = agent.pos
+
+        # Increment episode counter
+        if len(self.episodes["duration"]) and self.episodes["duration"][-1] == 0:
+            for key in self.episodes:
+                self.episodes[key].pop()
+        else:
+            self.episode += 1
+        self.write_start_episode()
+
+        # Restore agents to active state (pettingzoo variable)
+        self.agents = copy(self.agent_names)
+        # print("Active agents: ", self.agents)
+
+        # Reset goals
+        self.goal_cache.reset()
+
+        # Episode state trackers
+        # we have not applied a delayed terminate
+        self.episode_state["delayed_term"] = False
+
+        return self.get_observation(), self.infos
 
     def reset(
         self, goal_locations: Union[np.ndarray, None] = None, n_objectives=None, **kws
