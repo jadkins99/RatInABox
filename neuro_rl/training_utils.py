@@ -43,10 +43,10 @@ def run_episode(env : SpatialGoalEnvironment,
 
         # CHECK IF THE EPISODE IS OVER
         if env.t - env.episodes['start'][-1] > time_limit: 
-            env.reset_initial_position(initial_pos=initial_pos,episode_meta_info="timeout", seed = seed)
+            env.reset(episode_meta_info="timeout", seed = seed)
             return
         elif terminate_episode:
-            env.reset_initial_position(initial_pos=initial_pos,episode_meta_info="completed", seed = seed)
+            env.reset(episode_meta_info="completed", seed = seed)
             return
         
 def train_agent_episodes(
@@ -99,3 +99,25 @@ def train_agent_episodes(
 
     except KeyboardInterrupt:
         print("Interrupted by user")
+
+def sparsity_function(fta_arr: np.ndarray, thres=0.01):
+    """Compute sparsity of a FTA activation array"""
+    sparsity_num = 1 - np.sum(fta_arr[fta_arr > thres]) / fta_arr.size
+    return sparsity_num
+
+
+def create_fta_hook(fta_module, agent, env):
+    """Returns a hook function that collects sparsity"""
+    fta_sparsity = []
+    fta_states = []
+    fta_times = []
+
+    def hook(module, inputs, output):
+        fta_arr = output.detach().cpu().numpy().flatten()
+        sparsity = sparsity_function(fta_arr)
+        fta_sparsity.append(sparsity)
+
+        # Optional: store the agent position at this step
+        fta_states.append(np.copy(agent.pos))
+        fta_times.append(env.t)
+    return hook, fta_sparsity, fta_states, fta_times

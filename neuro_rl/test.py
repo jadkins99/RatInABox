@@ -53,7 +53,7 @@ placecells = PlaceCells(ag, params={'n':50,})
 
 #Make the actor and the critic (first make their core NNs then pass these to the full Actor and Critic classes)
 # actorNN  = VxVyGaussianFTU(n_in=placecells.n)
-actorNN  = VxVyGaussianFTU(n_in=placecells.n,post_fta=[2])
+actorNN  = VxVyGaussianFTA(n_in=placecells.n,post_fta=[2])
 criticNN = FTANetwork(n_in=placecells.n,post_fta=[1])
 #
 default_params_actor = {
