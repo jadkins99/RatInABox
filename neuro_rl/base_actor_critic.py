@@ -185,7 +185,7 @@ class VxVyGaussian:
     
 class VxVyGaussianFTA(VxVyGaussian, FTANetwork):
     
-    def __init__(self,n_in, post_fta, max_speed=0.5,):
+    def __init__(self,n_in, post_fta, max_speed=0.5):
         self.n = 2
         self.max_speed = max_speed
         super().__init__(n_in = n_in,post_fta=post_fta)
@@ -194,7 +194,7 @@ class VxVyGaussianMLP(VxVyGaussian,MultiLayerPerceptron):
     """In this instance, the output of the actor is a 2 dimensional vector representing the mean of v_x and the mean of v_y (each will then be sampled from a gaussian with the same variance)."""
     def __init__(self,n_in,
                  n_hidden = [50,], 
-                 max_speed=0.5,):
+                 max_speed=0.5):
         self.n = 2
         self.max_speed = max_speed
         super().__init__(n_in = n_in, n_hidden=n_hidden, n_out=self.n)

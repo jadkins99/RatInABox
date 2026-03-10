@@ -1470,6 +1470,8 @@ class SpatialGoalEnvironment(TaskEnvironment):
                 if isinstance(goal, SpatialGoal)
             ]
         )
+    
+    # new
     def reset_initial_position(self, initial_position,goal_locations: Union[np.ndarray, None] = None, n_objectives=None, seed=None, episode_meta_info=None):
 
         if goal_locations is not None:
