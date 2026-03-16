@@ -10,6 +10,7 @@ from ratinabox.contribs.TaskEnvironment import (SpatialGoalEnvironment, SpatialG
 from .base_actor_critic import Actor, Critic, VxVyGaussianMLP, FTANetwork
 from .training_utils import run_episode
 from .hook import create_fta_hook
+from .configs import *
 
 
 def set_seed(seed):
@@ -157,3 +158,33 @@ def run_multiple_episodes_with_fta(
 
     
     return all_episode_sparsity, all_episode_time, all_episodes_state,all_episode_bins, all_episode_bins_sparsity, all_out_arrays
+
+
+def run_experiment(num_runs):
+
+    runs_out_arrays = []
+    runs_timesteps = []
+    runs_bins = []
+    runs_states = []
+
+    for run in range(num_runs):
+
+        set_seed(run)
+        env, ag, placecells, actor, critic = create_experiment()
+        fta = critic.ftanetwork.fta
+        all_episode_sparsity, all_episode_time, all_episodes_state, all_episode_bins, all_episode_bins_sparsity, all_out_arrays = run_multiple_episodes_with_fta(
+        n_episodes=N_EPISODES,
+        env=env,
+        ag=ag,
+        actor=actor,
+        critic=critic,
+        placecells=placecells,
+        fta=fta,
+        num_bins=N_BINS,
+        time_limit=T_TIMEOUT
+        )
+
+        runs_out_arrays.append(all_out_arrays)
+        runs_timesteps.append(all_episode_time)
+        runs_bins.append(all_episode_bins)
+        runs_states.append(all_episodes_state)

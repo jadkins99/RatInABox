@@ -16,3 +16,4 @@ TAU_E = 5 # Eligibility trace time horizon
 ETA = 0.01 # Learning rate 
 N_EPISODES = 3 # Number of episodes
 L2 = 0.000 # L2 regularization
+N_BINS = 10

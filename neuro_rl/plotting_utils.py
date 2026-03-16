@@ -33,3 +33,26 @@ def ego_to_allo(v_ego, head_direction):
     bearing = ratinabox.utils.get_bearing(head_direction)
     v_allo = ratinabox.utils.rotate(v_ego, -bearing) #bearing measured clockwise from north, so we rotate anticlockwise by -bearing
     return v_allo
+
+
+def plot_dead_neurons_over_time(x,y,x_label,y_label, save = False, filename = None):
+
+    plt.figure(figsize=(8,4))
+    plt.plot(x, y, color='red', lw=2)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    # Remove grid
+    plt.grid(False)
+
+    # Remove top and right borders
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    if save:
+        if filename is None:
+            raise ValueError("filename must be provided when save=True")
+        plt.savefig(filename, dpi=300, bbox_inches="tight")
+
+    plt.show()
