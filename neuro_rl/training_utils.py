@@ -39,7 +39,6 @@ def run_episode(env : SpatialGoalEnvironment,
         # UPDATE THE CRITIC AND ACTOR (INCLUDING LEARNING)
         critic.update(reward=reward)
         actor.update(log_prob=log_prob, td_error=critic.td_error)
-        initial_pos = np.array([0.05,0.05])
 
         # CHECK IF THE EPISODE IS OVER
         if env.t - env.episodes['start'][-1] > time_limit: 
