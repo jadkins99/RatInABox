@@ -1,5 +1,8 @@
 import numpy as np
 
+NUM_RUNS = 1
+N_BINS = 20
+
 #TASK CONSTANTS
 DT = 0.1 # Time step
 T_TIMEOUT = 15 # Time out
@@ -16,4 +19,4 @@ TAU_E = 5 # Eligibility trace time horizon
 ETA = 0.01 # Learning rate 
 N_EPISODES = 3 # Number of episodes
 L2 = 0.000 # L2 regularization
-N_BINS = 10
+

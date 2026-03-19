@@ -42,10 +42,10 @@ def run_episode(env : SpatialGoalEnvironment,
 
         # CHECK IF THE EPISODE IS OVER
         if env.t - env.episodes['start'][-1] > time_limit: 
-            env.reset(episode_meta_info="timeout", seed = seed)
+            env.episodes['meta_info'].append("timeout")
             return
         elif terminate_episode:
-            env.reset(episode_meta_info="completed", seed = seed)
+            env.episodes['meta_info'].append("completed")
             return
         
 def train_agent_episodes(

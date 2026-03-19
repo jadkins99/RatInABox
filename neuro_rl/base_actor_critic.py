@@ -81,7 +81,8 @@ class Critic(BaseActorCritic):
     def update(self, reward, train=True):
         """Accepts the reward just observed, calcuates the TD error, then updates the weights based on the gradient of its firing rate and the TD error. Finally, it updates the firing rate to reflect to new position of the Agent."""
         self._update_td_error(reward) 
-        if train: super()._train_step(L = self.firingrate_torch, td_error = self.td_error)#does learning on the weights
+        if train: 
+            super()._train_step(L = self.firingrate_torch, td_error = self.td_error)#does learning on the weights
         self.firingrate_last = self.firingrate
         super().update()  # FeedForwardLayer builtin function. 
         return
@@ -120,7 +121,6 @@ class FTANetwork(nn.Module):
         layers = nn.ModuleList()
     
         for i in range(len(n_pre)-1):
-            
             layers.append(nn.Linear(n_pre[i],n_pre[i+1]))
             layers.append(nn.ReLU())
             
@@ -184,11 +184,10 @@ class VxVyGaussian:
         return action.detach().cpu().numpy()[0], log_prob
     
 class VxVyGaussianFTA(VxVyGaussian, FTANetwork):
-    
     def __init__(self,n_in, post_fta, max_speed=0.5):
         self.n = 2
         self.max_speed = max_speed
-        super().__init__(n_in = n_in,post_fta=post_fta)
+        super().__init__(n_in = n_in, post_fta=post_fta)
 
 class VxVyGaussianMLP(VxVyGaussian,MultiLayerPerceptron):
     """In this instance, the output of the actor is a 2 dimensional vector representing the mean of v_x and the mean of v_y (each will then be sampled from a gaussian with the same variance)."""
