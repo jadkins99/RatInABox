@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm
+
 from ratinabox.Agent import Agent
 from ratinabox.Neurons import PlaceCells 
 from ratinabox.contribs.TaskEnvironment import (SpatialGoalEnvironment, SpatialGoal, Reward)
@@ -11,6 +12,8 @@ from base_actor_critic import Actor, Critic, VxVyGaussianMLP, FTANetwork
 from training_utils import run_episode
 from hook import create_fta_hook, find_layer_module
 from configs import *
+from plotting_utils import plot_dead_neurons_over_time
+from analysis import compute_dead_neurons_per_timestep
 
 
 def set_seed(seed):
@@ -33,6 +36,7 @@ def create_experiment(
     t_timeout=15,
     input_min=-1.0,
     input_max=1.0,
+    n_tiles=N_BINS,
     goal_pos=np.array([0.9, 0.9]),
     goal_radius=0.1,
     reward_val=1,
@@ -70,7 +74,7 @@ def create_experiment(
     # --- Networks ---
     # actorNN = VxVyGaussianFTA(n_in=placecells.n, post_fta=actor_fta_post)
     actorNN = VxVyGaussianMLP(n_in=placecells.n) #add seed
-    criticNN = FTANetwork(n_in=placecells.n,n_out=1, input_min=input_min, input_max=input_max, post_fta=critic_fta_post, eta=fta_eta)
+    criticNN = FTANetwork(n_in=placecells.n, n_out=1,n_tiles=n_tiles, input_min=input_min, input_max=input_max, post_fta=critic_fta_post, eta=fta_eta)
     
     # --- Actor ---
     default_params_actor = {
@@ -174,7 +178,7 @@ def run_experiment(num_runs):
     for run in range(num_runs):
 
         set_seed(run)
-        env, ag, placecells, actor, critic = create_experiment(dt=DT, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, wall=WALL, n_placecells=5, fta_eta=ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
+        env, ag, placecells, actor, critic = create_experiment(dt=DT, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, wall=WALL, n_placecells=5, fta_eta=FTA_ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
         fta = find_layer_module(critic.NeuralNetworkModule, 'FTA')
         _, all_episode_time, all_episodes_state, all_episode_bins, _, all_out_arrays, all_input_arrays = run_multiple_episodes_with_fta(
         n_episodes=N_EPISODES,
@@ -194,7 +198,11 @@ def run_experiment(num_runs):
         runs_bins.append(all_episode_bins)
         runs_states.append(all_episodes_state)
 
+    return runs_fta_out_arrays
+
 
 if __name__ == "__main__":
-    run_experiment(num_runs=NUM_RUNS)
+    runs_out_arrays = run_experiment(num_runs=NUM_RUNS)
+    dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='Dead Neurons')
     

@@ -74,7 +74,8 @@ class BaseActorCritic(NeuralNetworkNeurons):
 
 # The actor and critic only different slightly in their .update() functions so we can inherit from the same base class
 
-class Critic(BaseActorCritic):    
+class Critic(BaseActorCritic): 
+    default_params = {}   
     def __init__(self, Agent, params={}):
         super().__init__(Agent, params) 
 
@@ -94,6 +95,7 @@ class Critic(BaseActorCritic):
         return
 
 class Actor(BaseActorCritic):
+    default_params = {}
     def __init__(self, Agent, params={}):
         super().__init__(Agent, params)
      # see BaseActorCritic for the default params
@@ -114,10 +116,13 @@ class FTANetwork(nn.Module):
         n_hidden (list, optional): A list of integers specifying the number of neurons in each hidden layer. Defaults to [20,20]."""
 
     def __init__(self, n_in=20, n_out=1, pre_fta=[20],post_fta=[20],input_min=-1.0, input_max=1.0, n_tiles=10,n_tilings=1, eta=1.0):
-        nn.Module.__init__(self)
-        fta_out = pre_fta[-1]*n_tiles*n_tilings
+
+        super(FTANetwork, self).__init__()
+
+        fta_out = pre_fta[-1] * n_tiles * n_tilings
         n_pre = [n_in] + pre_fta 
-        n_post = [fta_out] + post_fta 
+        n_post = [fta_out] + post_fta + [n_out]
+
         layers = nn.ModuleList()
     
         for i in range(len(n_pre)-1):
@@ -125,7 +130,6 @@ class FTANetwork(nn.Module):
             layers.append(nn.ReLU())
             
         layers.append(FTA(params={'n_tiles':n_tiles, 'n_tilings':n_tilings, 'fta_input_min':input_min, 'fta_input_max':input_max, 'fta_eta':eta}, input_dim=pre_fta[-1]))
-        
         
         for i in range(len(n_post)-1):
             layers.append(nn.Linear(n_post[i],n_post[i+1]))

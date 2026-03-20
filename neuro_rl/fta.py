@@ -19,6 +19,9 @@ class FTAConfiguration(object):
             if key in self.default_attributes:
                 setattr(self, key, configdict[key])
 
+        if not hasattr(self, 'fta_input_max'):
+            self.fta_input_max = self.default_attributes['fta_input_max']
+
         if not hasattr(self, 'fta_input_min'):
             self.fta_input_min = -self.fta_input_max
         if not hasattr(self, 'fta_eta'):
@@ -77,14 +80,12 @@ class FTA(nn.Module):
             self.register_buffer('tiling_low_bound', torch.tensor(low))
             self.register_buffer('tiling_up_bound', torch.tensor(up))
 
-        print(f' fta_eta: {self.fta_eta}, n_tilings: {self.n_tilings}, n_tiles: {self.n_tiles}')
+        print(f' fta_eta: {self.fta_eta}, n_tilings: {self.n_tilings}, n_tiles: {self.n_tiles}, input_dim: {self.input_dim}')
 
     def get_tilings(self, n_tilings, n_tile, input_min, input_max):
         tile_delta = (input_max - input_min) / n_tile
         if n_tilings == 1:
             one_c = np.linspace(input_min, input_max, n_tile, endpoint=False).astype(np.float32)
-            # tile_delta = one_c[1] - one_c[0] # added to ensure consistency with original code
-            # Ensure shape is compatible for broadcasting
             return one_c, tile_delta, input_min, input_max
         
         # Logic for multiple tilings (used if individual_tiling=False but n_tilings=1 is handled above)
