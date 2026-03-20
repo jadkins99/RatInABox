@@ -12,8 +12,8 @@ from base_actor_critic import Actor, Critic, VxVyGaussianMLP, FTANetwork
 from training_utils import run_episode
 from hook import create_fta_hook, find_layer_module
 from configs import *
-from plotting_utils import plot_dead_neurons_over_time
-from analysis import compute_dead_neurons_per_timestep
+from plotting_utils import plot_bin_counts_per_percentage, plot_dead_neurons_over_time, plot_bin_counts_per_percentage, plot_rate_maps
+from analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep
 
 
 def set_seed(seed):
@@ -176,6 +176,7 @@ def run_experiment(num_runs):
     runs_states = []
 
     for run in range(num_runs):
+        print(f"Starting run {run+1}/{num_runs}") 
 
         set_seed(run)
         env, ag, placecells, actor, critic = create_experiment(dt=DT, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, wall=WALL, n_placecells=5, fta_eta=FTA_ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
@@ -198,11 +199,17 @@ def run_experiment(num_runs):
         runs_bins.append(all_episode_bins)
         runs_states.append(all_episodes_state)
 
+        plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join("neuro_rl","results", f"run_{run+1}"))
+
     return runs_fta_out_arrays
 
 
 if __name__ == "__main__":
     runs_out_arrays = run_experiment(num_runs=NUM_RUNS)
     dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
-    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='Dead Neurons')
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", "dead_neurons_per_timestep.png"))
+    dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", "dead_neurons_per_episode.png"))
+    bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
+    plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join("neuro_rl","results"))
     

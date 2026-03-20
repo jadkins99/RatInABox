@@ -37,9 +37,9 @@ def create_fta_hook(fta, ag, env, bins, thres=0.1):
         num_fta_vectors = out_arr.size // bins
         # print(f"FTA output: {out_arr}, shape: {out_arr.shape}")
         fta_b = np.array_split(out_arr, num_fta_vectors)
-        print(f"FTA input: {in_arr}, shape: {in_arr.shape}")
-        print(f"FTA bins: {fta_b}")
-        print(f"FTA output: {out_arr}, shape: {out_arr.shape}")
+        # print(f"FTA input: {in_arr}, shape: {in_arr.shape}")
+        # print(f"FTA bins: {fta_b}")
+        # print(f"FTA output: {out_arr}, shape: {out_arr.shape}")
         # print(f"FTA bins: {fta_b} length: {len(fta_b)}")
         # fta_sparse_bins = [sparsity_function(b) for b in fta_b]
         # fta_sparsity.append(sparsity_function(out_arr))
