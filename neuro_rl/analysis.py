@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
 
 def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
     # Flatten episodes per run
@@ -105,3 +106,102 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
 
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
+
+def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
+    """
+    Helper to compute rate map for a single set of positions and traces.
+
+    Args:
+        position:    np.array of shape (timesteps, 2)
+        trace:       np.array of shape (timesteps, n_units)
+        n_bins:      number of spatial bins
+        filter_size: sigma for gaussian smoothing (None = no smoothing)
+        buffer:      buffer for binning
+
+    Returns:
+        rate_maps:     np.array of shape (n_units, n_bins, n_bins)
+        occupancy_map: np.array of shape (n_bins, n_bins)
+        average_events: np.array of shape (n_units,)
+    """
+    len_recording = trace.shape[0]
+    n_units = trace.shape[1]
+
+    rate_maps = np.zeros([n_units, n_bins, n_bins])
+    count_map = np.zeros([n_bins, n_bins])
+
+    position_binned = (position // ((np.nanmax(position, axis=0) + buffer) / n_bins)).astype(int)
+    position_binned = np.clip(position_binned, 0, n_bins - 1)
+
+    for t, (x, y) in enumerate(position_binned):
+        rate_maps[:, x, y] += trace[t, :]
+        count_map[x, y] += 1
+
+    nan_map = np.zeros_like(count_map) * np.nan
+    nan_map[np.where(count_map)[0], np.where(count_map)[1]] = 1.0
+
+    if filter_size is not None:
+        rate_maps = gaussian_filter1d(gaussian_filter1d(rate_maps, sigma=filter_size, axis=1),
+                                      sigma=filter_size, axis=2)
+        count_map = gaussian_filter1d(gaussian_filter1d(count_map, sigma=filter_size, axis=0),
+                                      sigma=filter_size, axis=1)
+
+    for unit in range(n_units):
+        rate_maps[unit] = (rate_maps[unit] / count_map) * nan_map
+
+    occupancy_map  = count_map / len_recording
+    average_events = np.nanmean(trace, axis=0)
+
+    return rate_maps, occupancy_map, average_events
+
+
+def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
+    """
+    Create rate maps from agent position and FTA output data.
+
+    Args:
+        runs_states:     list[runs][episodes][timesteps] of agent (x,y) positions
+        runs_out_arrays: list[runs][episodes][timesteps] of FTA output vectors
+        n_bins:          number of spatial bins in x- and y-dimensions
+        filter_size:     sigma size (bin number) for gaussian smoothing (None = no smoothing)
+        buffer:          buffer size for rounding binned position data
+
+    Returns:
+        rate_maps_per_run:  list of np.array of shape (n_units, n_bins, n_bins) — one per run
+        occupancy_per_run:  list of np.array of shape (n_bins, n_bins) — one per run
+        rate_maps_avg:      np.array of shape (n_units, n_bins, n_bins) — average across runs
+        occupancy_map:      np.array of shape (n_bins, n_bins) — average across runs
+        average_events:     np.array of shape (n_units,) — average activation per unit
+    """
+
+    # --- Per-run rate maps ---
+    rate_maps_per_run  = []
+    occupancy_per_run  = []
+
+    for run_s, run_o in zip(runs_states, runs_out_arrays):
+        all_positions = []
+        all_outputs   = []
+        for ep_s, ep_o in zip(run_s, run_o):
+            all_positions.extend(ep_s)
+            all_outputs.extend(ep_o)
+
+        position = np.array(all_positions)
+        trace    = np.array(all_outputs)
+        rate_maps, occupancy, _ = _compute_single_rate_map(position, trace, n_bins, filter_size, buffer)
+        rate_maps_per_run.append(rate_maps)
+        occupancy_per_run.append(occupancy)
+
+    # --- Average across all runs ---
+    all_positions = []
+    all_outputs   = []
+    for run_s, run_o in zip(runs_states, runs_out_arrays):
+        for ep_s, ep_o in zip(run_s, run_o):
+            all_positions.extend(ep_s)
+            all_outputs.extend(ep_o)
+
+    position = np.array(all_positions)
+    trace    = np.array(all_outputs)
+    rate_maps_avg, occupancy_map, average_events = _compute_single_rate_map(
+        position, trace, n_bins, filter_size, buffer
+    )
+
+    return rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events
