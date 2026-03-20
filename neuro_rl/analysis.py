@@ -205,3 +205,4 @@ def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=N
     )
 
     return rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events
+

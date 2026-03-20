@@ -199,3 +199,35 @@ def plot_fta_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filen
 
     return fig, axes
 
+def plot_fta_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="fta_rate_map_avg_units.png"):
+    """
+    Plot a single rate map averaging activation across all FTA units.
+
+    Args:
+        rate_maps: np.array of shape (n_units, n_bins, n_bins)
+        fill_na:   whether to fill NaN values with the minimum visited value
+        save_dir:  directory to save the plot (optional)
+        filename:  filename for saving the plot
+    """
+
+    # Average across units -> shape (n_bins, n_bins)
+    rate_map = np.nanmean(rate_maps, axis=0)
+
+    vmin = np.nanmin(rate_map)
+    vmax = np.nanmax(rate_map)
+    if fill_na:
+        rate_map = np.where(np.isnan(rate_map), vmin, rate_map)
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    im = ax.imshow(rate_map.T, origin='lower', cmap='viridis', vmin=vmin, vmax=vmax)
+    plt.colorbar(im, ax=ax, label="Average activation")
+    ax.set_title("FTA Rate Map (average across units)")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.tight_layout()
+
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+        fig.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches="tight")
+
+    return fig, ax
