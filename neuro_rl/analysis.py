@@ -206,3 +206,57 @@ def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=N
 
     return rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events
 
+def get_active_bins_from_run_bins(run_bins, threshold=0.99):
+    """
+    For each timestep, find which bin has a value of 1 (fully active) 
+    using the already-computed per-dimension bin arrays.
+
+    Args:
+        run_bins:  list[runs][episodes][timesteps][input_dim] of np.array of shape (n_tiles,)
+        threshold: threshold to consider a bin as fully active (default 0.99)
+
+    Returns:
+        all_active_bins: list[runs][episodes][timesteps][input_dim] of active bin indices
+    """
+    all_active_bins = []
+
+    for run in run_bins:
+        run_active = []
+        for episode in run:
+            ep_active = []
+            for timestep_bins in episode:
+                timestep_active = []
+                for dim_bins in timestep_bins:
+                    active = np.where(np.array(dim_bins) >= threshold)[0]
+                    timestep_active.append(active.tolist() if len(active) > 0 else None)
+                ep_active.append(timestep_active)
+            run_active.append(ep_active)
+        all_active_bins.append(run_active)
+
+    return all_active_bins
+
+def check_active_bins_below_threshold(active_bins, bin_threshold=10):
+    """
+    Check if any active bin (value ~1) is below a given bin index threshold.
+
+    Args:
+        active_bins:    list[runs][episodes][timesteps][input_dim] of active bin indices
+        bin_threshold:  bin index below which we flag as unexpected (default 10)
+
+    Returns:
+        violations: list of tuples (run, episode, timestep, dim, bin_idx) where a bin
+                    below bin_threshold is fully active
+    """
+    violations = []
+
+    for run_idx, run in enumerate(active_bins):
+        for ep_idx, episode in enumerate(run):
+            for t_idx, timestep in enumerate(episode):
+                for dim_idx, bins in enumerate(timestep):
+                    if bins is None:
+                        continue
+                    for bin_idx in bins:
+                        if bin_idx < bin_threshold:
+                            violations.append((run_idx, ep_idx, t_idx, dim_idx, bin_idx))
+
+    return violations
