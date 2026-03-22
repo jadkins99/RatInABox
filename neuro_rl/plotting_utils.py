@@ -45,12 +45,12 @@ def plot_rate_maps(env, ag, actor, critic, goal_pos, reward_radius, reward=False
             fig.savefig(os.path.join(save_dir, "reward_history.png"))
 
     fig, ax = critic.plot_rate_map()
-    fig.suptitle("Value function (before learning)")
+    fig.suptitle("Value function")
     if save_dir is not None:
         fig.savefig(os.path.join(save_dir, "value_function.png"))
 
     fig, ax = actor.plot_rate_map(zero_center=True)
-    fig.suptitle("Policy (before learning)")
+    fig.suptitle("Policy")
     ax[0].set_title("Vx")
     ax[1].set_title("Vy")
     if save_dir is not None:

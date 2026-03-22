@@ -22,3 +22,8 @@ data-zenodo/
 
 neuro_rl/results/
 *ENV/
+*logs/
+*run.sh
+*data/
+
+
