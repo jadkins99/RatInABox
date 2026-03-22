@@ -222,11 +222,8 @@ def run_experiment(num_runs, env_shape="empty"):
         save_data(all_episodes_bins, os.path.join(DATA_DIR, f'all_episodes_bins_run_{run+1}'))
         save_data(all_out_arrays, os.path.join(DATA_DIR, f'all_out_arrays_run_{run+1}'))
         
-        
-        
 
         runs_fta_out_arrays.append(all_out_arrays)
-        runs_fta_input_arrays.append(all_input_arrays)
         runs_timesteps.append(all_episode_time)
         runs_bins.append(all_episodes_bins)
         runs_states.append(all_episodes_state)
