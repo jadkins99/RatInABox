@@ -1,4 +1,9 @@
 import numpy as np
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FIGURES_DIR = os.path.join(BASE_DIR, "figures")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 NUM_RUNS = 3
 N_BINS = 20

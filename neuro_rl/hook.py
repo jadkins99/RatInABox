@@ -24,7 +24,6 @@ def create_fta_hook(fta, ag, env, bins, thres=0.1):
     time_steps = []
     fta_bins_sparsity = []
     fta_bins = []
-    input_arrays = []
     out_arrays = []
 
     
@@ -48,7 +47,7 @@ def create_fta_hook(fta, ag, env, bins, thres=0.1):
         # fta_bins_sparsity.append(fta_sparse_bins)
         fta_bins.append(fta_b)
         out_arrays.append(out_arr)
-        input_arrays.append(in_arr)
 
 
-    return hook_fn, fta_sparsity, states, time_steps,fta_bins, fta_bins_sparsity, out_arrays, input_arrays
+
+    return hook_fn, fta_sparsity, states, time_steps,fta_bins, fta_bins_sparsity, out_arrays
