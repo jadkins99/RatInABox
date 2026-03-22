@@ -224,7 +224,7 @@ def run_experiment(num_runs, env_shape="empty"):
         
 
         runs_fta_out_arrays.append(all_out_arrays)
-        runs_timesteps.append(all_episode_time)
+        runs_timesteps.append(all_episodes_time)
         runs_bins.append(all_episodes_bins)
         runs_states.append(all_episodes_state)
 
