@@ -228,7 +228,7 @@ def run_experiment(num_runs, env_shape="empty"):
         runs_bins.append(all_episodes_bins)
         runs_states.append(all_episodes_state)
 
-        plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join("results",f"env_{env_shape}", f"run_{run+1}"))
+        plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR,f"env_{env_shape}", f"run_{run+1}"))
 
     return runs_fta_out_arrays, runs_states, runs_bins
 
