@@ -11,6 +11,13 @@ class BaseActorCritic(NeuralNetworkNeurons):
         """Initialise the actor or critic neurons. Provide the Agent and any parameters which must include the pytorch nn.Module to use as the neural network and a list of Neurons which act as the input layers."""
         self.params = __class__.default_params.copy()
         self.params.update(params)
+
+        if (self.params["n"] is None) and (self.params["NeuralNetworkModule"] is not None):
+            n_in = sum([layer.n for layer in self.params["input_layers"]])
+            dummy_input = torch.zeros(1, n_in)
+            self.params["n"] = self.params["NeuralNetworkModule"](dummy_input).shape[1]
+
+
         super().__init__(Agent, self.params)
 
         self.use_eligibility_traces = self.params["eligibility_traces"]

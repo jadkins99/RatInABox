@@ -56,8 +56,8 @@ class NeuralNetworkNeurons(Neurons):
             self.NeuralNetworkModule = MultiLayerPerceptron(n_in=self.n_in, n_out=self.n, n_hidden=[20,20])
             warnings.warn(f"No NeuralNetworkModule was provided so a default MLP with {self.n_in} inputs, {self.n} outputs and 2 hidden ReLU layers of size 20 will be used. Alternatively provide one in the params['NeuralNetworkModule']=<any-torch-nn.Module-with-a-.forward()-method> and don't set 'n'.")
 
-        elif (self.n is not None) and (self.NeuralNetworkModule is not None):
-            raise ValueError(f"You provided both 'n' and `NeuralNetworkModule` as parameters. These are mutually exclusive. Either provide 'NeuralNetworkModule' and no 'n' (the output size of the NeuralNetworkModule will be used as the number of neurons in this layer) or 'n' and no 'NeuralNetworkModule (a default MLP will be initialised)")
+        # elif (self.n is not None) and (self.NeuralNetworkModule is not None):
+        #     raise ValueError(f"You provided both 'n' and `NeuralNetworkModule` as parameters. These are mutually exclusive. Either provide 'NeuralNetworkModule' and no 'n' (the output size of the NeuralNetworkModule will be used as the number of neurons in this layer) or 'n' and no 'NeuralNetworkModule (a default MLP will be initialised)")
 
         elif (self.n is None) and (self.NeuralNetworkModule is None):
             raise ValueError("You provided neither a 'NeuralNetworkModule' nor 'n' as parameters. Either provide 'NeuralNetworkModule' and no 'n' (the output size of the NeuralNetworkModule will be used as the number of neurons in this layer) or 'n' and no 'NeuralNetworkModule (a default MLP will be initialised)")

@@ -221,41 +221,41 @@ def run_experiment(num_runs, env_shape="empty"):
     return runs_fta_out_arrays, runs_states, runs_bins
 
 
-if __name__ == "__main__":
 
-    envs = ["empty", "obstacle_near_goal", "obstacle_far_goal"]
 
-    for env_shape in envs:
+envs = ["empty", "obstacle_near_goal", "obstacle_far_goal"]
 
-        # Run experiment and collect FTA outputs
-        runs_out_arrays, runs_states, runs_bins = run_experiment(num_runs=NUM_RUNS, env_shape=env_shape)
+for env_shape in envs:
 
-        # Dead neuron analysis
-        dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
-        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}", "dead_neurons_per_timestep.png"))
-        dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
-        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}", "dead_neurons_per_episode.png"))
-        bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
-        plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}"))
+    # Run experiment and collect FTA outputs
+    runs_out_arrays, runs_states, runs_bins = run_experiment(num_runs=NUM_RUNS, env_shape=env_shape)
 
-        # Compute and plot FTA rate maps
-        rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events = compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=N_BINS, filter_size=1.5)
+    # Dead neuron analysis
+    dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}", "dead_neurons_per_timestep.png"))
+    dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}", "dead_neurons_per_episode.png"))
+    bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
+    plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join("neuro_rl","results", f"env_{env_shape}"))
 
-        # Plot average per unit across runs
-        plot_fta_rate_maps(rate_maps_avg, n_cols=N_BINS, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename="fta_rate_maps_avg.png")
-        plot_occupancy_map(occupancy_map, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename="occupancy_avg.png")
+    # Compute and plot FTA rate maps
+    rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events = compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=N_BINS, filter_size=1.5)
 
-        # Plot per run
-        for run_idx, (rate_maps, occupancy) in enumerate(zip(rate_maps_per_run, occupancy_per_run)):
-            plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_maps_run{run_idx}.png")
-            plot_occupancy_map(occupancy, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"occupancy_run{run_idx}.png")
+    # Plot average per unit across runs
+    plot_fta_rate_maps(rate_maps_avg, n_cols=N_BINS, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename="fta_rate_maps_avg.png")
+    plot_occupancy_map(occupancy_map, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename="occupancy_avg.png")
 
-        # Average across runs
-        plot_fta_average_units_rate_map(rate_maps_avg, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename=f"fta_rate_map_avg_units.png")
+    # Plot per run
+    for run_idx, (rate_maps, occupancy) in enumerate(zip(rate_maps_per_run, occupancy_per_run)):
+        plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_maps_run{run_idx}.png")
+        plot_occupancy_map(occupancy, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"occupancy_run{run_idx}.png")
 
-        # Per run
-        for run_idx, rate_maps in enumerate(rate_maps_per_run):
-            plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_map_avg_units_run{run_idx}.png")
+    # Average across runs
+    plot_fta_average_units_rate_map(rate_maps_avg, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}"), filename=f"fta_rate_map_avg_units.png")
 
-    
+    # Per run
+    for run_idx, rate_maps in enumerate(rate_maps_per_run):
+        plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join("neuro_rl","results", f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_map_avg_units_run{run_idx}.png")
+
+ 
     
