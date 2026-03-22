@@ -205,7 +205,7 @@ def run_experiment(num_runs, env_shape="empty"):
         set_seed(run)
         env, ag, placecells, actor, critic = create_experiment(dt=DT, env_shape=env_shape, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, n_placecells=5, fta_eta=FTA_ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
         fta = find_layer_module(critic.NeuralNetworkModule, 'FTA')
-        _, all_episode_time, all_episodes_state, all_episode_bins, _, all_out_arrays = run_multiple_episodes_with_fta(
+        _, all_episodes_time, all_episodes_state, all_episodes_bins, _, all_out_arrays = run_multiple_episodes_with_fta(
         n_episodes=N_EPISODES,
         env=env,
         ag=ag,
@@ -217,7 +217,7 @@ def run_experiment(num_runs, env_shape="empty"):
         time_limit=T_TIMEOUT
         )
 
-        save_data(all_episode_time, os.path.join(DATA_DIR, f'all_episodes_time_run_{run+1}'))
+        save_data(all_episodes_time, os.path.join(DATA_DIR, f'all_episodes_time_run_{run+1}'))
         save_data(all_episodes_state, os.path.join(DATA_DIR, f'all_episodes_states_run_{run+1}'))
         save_data(all_episodes_bins, os.path.join(DATA_DIR, f'all_episodes_bins_run_{run+1}'))
         save_data(all_out_arrays, os.path.join(DATA_DIR, f'all_out_arrays_run_{run+1}'))
@@ -228,7 +228,7 @@ def run_experiment(num_runs, env_shape="empty"):
         runs_fta_out_arrays.append(all_out_arrays)
         runs_fta_input_arrays.append(all_input_arrays)
         runs_timesteps.append(all_episode_time)
-        runs_bins.append(all_episode_bins)
+        runs_bins.append(all_episodes_bins)
         runs_states.append(all_episodes_state)
 
         plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join("results",f"env_{env_shape}", f"run_{run+1}"))
