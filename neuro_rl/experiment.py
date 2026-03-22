@@ -24,12 +24,18 @@ def get_environment(shape="empty", dt=DT, episode_terminate_delay=REWARD_DURATIO
         env.add_wall([[.30, .45], [.45, .45]])
         env.add_wall([[.45, .45], [.45, .30]])
         env.add_wall([[.45, .30], [.30, .30]])
+        resolution = 0.01  # spacing between walls
+        for y in np.arange(0.30, 0.45, resolution):
+            env.add_wall([[.30, y], [.45, y]])
     elif shape == "obstacle_far_goal":
         env = SpatialGoalEnvironment(dt=dt, teleport_on_reset=teleport_on_reset, episode_terminate_delay=episode_terminate_delay)
         env.add_wall([[0.85, 0.85], [0.85, 1.0]])
         env.add_wall([[0.85, 1.0], [1.0, 1.0]])
         env.add_wall([[1.0, 1.0], [1.0, 0.85]])
         env.add_wall([[1.0, 0.85], [0.85, 0.85]])
+        resolution = 0.01
+        for y in np.arange(0.85, 1.0, resolution):
+            env.add_wall([[0.85, y], [1.0, y]])
     else:
         raise ValueError(f"Unknown environment shape: {shape}")
     return env
