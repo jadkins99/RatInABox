@@ -154,9 +154,41 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
     return rate_maps, occupancy_map, average_events
 
 
-def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
+def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
     """
-    Create rate maps from agent position and FTA output data.
+    Compute rate map for a single set of states and out_arrays (e.g. one run).
+
+    Args:
+        states:      list[episodes][timesteps] of agent (x,y) positions
+        out_arrays:  list[episodes][timesteps] of FTA output vectors
+        n_bins:      number of spatial bins in x- and y-dimensions
+        filter_size: sigma size (bin number) for gaussian smoothing (None = no smoothing)
+        buffer:      buffer size for rounding binned position data
+
+    Returns:
+        rate_maps:      np.array of shape (n_units, n_bins, n_bins)
+        occupancy_map:  np.array of shape (n_bins, n_bins)
+        average_events: np.array of shape (n_units,)
+    """
+    all_positions = []
+    all_outputs   = []
+    for ep_s, ep_o in zip(states, out_arrays):
+        all_positions.extend(ep_s)
+        all_outputs.extend(ep_o)
+
+    position = np.array(all_positions)
+    trace    = np.array(all_outputs)
+
+    rate_maps, occupancy_map, average_events = _compute_single_rate_map(
+        position, trace, n_bins, filter_size, buffer
+    )
+
+    return rate_maps, occupancy_map, average_events
+
+
+def compute_fta_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
+    """
+    Compute average rate map across all runs.
 
     Args:
         runs_states:     list[runs][episodes][timesteps] of agent (x,y) positions
@@ -166,31 +198,10 @@ def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=N
         buffer:          buffer size for rounding binned position data
 
     Returns:
-        rate_maps_per_run:  list of np.array of shape (n_units, n_bins, n_bins) — one per run
-        occupancy_per_run:  list of np.array of shape (n_bins, n_bins) — one per run
-        rate_maps_avg:      np.array of shape (n_units, n_bins, n_bins) — average across runs
-        occupancy_map:      np.array of shape (n_bins, n_bins) — average across runs
-        average_events:     np.array of shape (n_units,) — average activation per unit
+        rate_maps_avg:  np.array of shape (n_units, n_bins, n_bins)
+        occupancy_map:  np.array of shape (n_bins, n_bins)
+        average_events: np.array of shape (n_units,)
     """
-
-    # --- Per-run rate maps ---
-    rate_maps_per_run  = []
-    occupancy_per_run  = []
-
-    for run_s, run_o in zip(runs_states, runs_out_arrays):
-        all_positions = []
-        all_outputs   = []
-        for ep_s, ep_o in zip(run_s, run_o):
-            all_positions.extend(ep_s)
-            all_outputs.extend(ep_o)
-
-        position = np.array(all_positions)
-        trace    = np.array(all_outputs)
-        rate_maps, occupancy, _ = _compute_single_rate_map(position, trace, n_bins, filter_size, buffer)
-        rate_maps_per_run.append(rate_maps)
-        occupancy_per_run.append(occupancy)
-
-    # --- Average across all runs ---
     all_positions = []
     all_outputs   = []
     for run_s, run_o in zip(runs_states, runs_out_arrays):
@@ -200,11 +211,12 @@ def compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=15, filter_size=N
 
     position = np.array(all_positions)
     trace    = np.array(all_outputs)
+
     rate_maps_avg, occupancy_map, average_events = _compute_single_rate_map(
         position, trace, n_bins, filter_size, buffer
     )
 
-    return rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events
+    return rate_maps_avg, occupancy_map, average_events
 
 def get_active_bins_from_run_bins(run_bins, threshold=0.99):
     """

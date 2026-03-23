@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm
+import argparse
 
 from ratinabox.Agent import Agent
 from ratinabox.Neurons import PlaceCells 
@@ -14,7 +15,7 @@ from training_utils import run_episode
 from hook import create_fta_hook, find_layer_module
 from configs import *
 from plotting_utils import plot_bin_counts_per_percentage, plot_dead_neurons_over_time, plot_bin_counts_per_percentage, plot_fta_average_units_rate_map, plot_occupancy_map, plot_rate_maps, plot_fta_rate_maps
-from analysis import check_active_bins_below_threshold, compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_fta_rate_maps, get_active_bins_from_run_bins
+from analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_fta_rate_map_single
 
 def get_environment(shape="empty", dt=DT, episode_terminate_delay=REWARD_DURATION, teleport_on_reset=True):
     if shape == "empty":
@@ -191,83 +192,73 @@ def run_multiple_episodes_with_fta(
     return all_episode_sparsity, all_episode_time, all_episodes_state,all_episode_bins, all_episode_bins_sparsity, all_out_arrays
 
 
-def run_experiment(num_runs, env_shape="empty"):
+def run_experiment(seed, env_shape="empty"):
 
-    runs_fta_out_arrays = []
-    runs_fta_input_arrays = []
-    runs_timesteps = []
-    runs_bins = []
-    runs_states = []
+    print(f"Starting experiment (seed {seed}") 
 
-    for run in range(num_runs):
-        print(f"Starting run {run+1}/{num_runs}") 
+    set_seed(seed)
+    env, ag, placecells, actor, critic = create_experiment(dt=DT, env_shape=env_shape, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, n_placecells=5, fta_eta=FTA_ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
+    fta = find_layer_module(critic.NeuralNetworkModule, 'FTA')
+    _, all_episodes_time, all_episodes_state, all_episodes_bins, _, all_out_arrays = run_multiple_episodes_with_fta(n_episodes=N_EPISODES,env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,fta=fta,num_bins=N_BINS,time_limit=T_TIMEOUT)
 
-        set_seed(run)
-        env, ag, placecells, actor, critic = create_experiment(dt=DT, env_shape=env_shape, t_timeout=T_TIMEOUT, input_min=-1, input_max=1, goal_pos=GOAL_POS, goal_radius=GOAL_RADIUS, reward_val=REWARD, reward_duration=REWARD_DURATION, n_placecells=5, fta_eta=FTA_ETA, eta=ETA, l2=L2, tau=TAU, tau_e=TAU_E)
-        fta = find_layer_module(critic.NeuralNetworkModule, 'FTA')
-        _, all_episodes_time, all_episodes_state, all_episodes_bins, _, all_out_arrays = run_multiple_episodes_with_fta(
-        n_episodes=N_EPISODES,
-        env=env,
-        ag=ag,
-        actor=actor,
-        critic=critic,
-        placecells=placecells,
-        fta=fta,
-        num_bins=N_BINS,
-        time_limit=T_TIMEOUT
-        )
+    save_data(all_episodes_time, os.path.join(DATA_DIR, f'all_episodes_time_seed_{seed}'))
+    save_data(all_episodes_state, os.path.join(DATA_DIR, f'all_episodes_states_seed_{seed}'))
+    save_data(all_episodes_bins, os.path.join(DATA_DIR, f'all_episodes_bins_seed_{seed}'))
+    save_data(all_out_arrays, os.path.join(DATA_DIR, f'all_out_arrays_seed_{seed}'))
 
-        save_data(all_episodes_time, os.path.join(DATA_DIR, f'all_episodes_time_run_{run+1}'))
-        save_data(all_episodes_state, os.path.join(DATA_DIR, f'all_episodes_states_run_{run+1}'))
-        save_data(all_episodes_bins, os.path.join(DATA_DIR, f'all_episodes_bins_run_{run+1}'))
-        save_data(all_out_arrays, os.path.join(DATA_DIR, f'all_out_arrays_run_{run+1}'))
-        
+    plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR,f"env_{env_shape}", f"seed_{seed}"))
 
-        runs_fta_out_arrays.append(all_out_arrays)
-        runs_timesteps.append(all_episodes_time)
-        runs_bins.append(all_episodes_bins)
-        runs_states.append(all_episodes_state)
+    rate_maps, occupancy, average_events = compute_fta_rate_map_single(all_episodes_state, all_out_arrays, n_bins=N_BINS, filter_size=1.5)
+    plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_maps_seed_{seed}.png")
+    plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"occupancy_seed_{seed}.png")
 
-        plot_rate_maps(env, ag, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR,f"env_{env_shape}", f"run_{run+1}"))
-
-    return runs_fta_out_arrays, runs_states, runs_bins
+    plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_map_avg_units_seed_{seed}.png")
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--env_shape", type=str, default="empty")
+    args = parser.parse_args()
+
+    run_experiment(seed=args.seed, env_shape=args.env_shape)
+    
+# First, compute rate maps per seed and then average them.
 
 
-envs = ["empty", "obstacle_near_goal", "obstacle_far_goal"]
+# envs = ["empty", "obstacle_near_goal", "obstacle_far_goal"]
 
-for env_shape in envs:
+# for env_shape in envs:
 
-    # Run experiment and collect FTA outputs
-    runs_out_arrays, runs_states, runs_bins = run_experiment(num_runs=NUM_RUNS, env_shape=env_shape)
+#     # Run experiment and collect FTA outputs
+#     runs_out_arrays, runs_states, runs_bins = run_experiment(num_runs=NUM_RUNS, env_shape=env_shape)
 
-    # Dead neuron analysis
-    dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
-    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_timestep.png"))
-    dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
-    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_episode.png"))
-    bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
-    plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}"))
+#     # Dead neuron analysis
+#     dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
+#     plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_timestep.png"))
+#     dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
+#     plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_episode.png"))
+#     bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
+#     plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}"))
 
-    # Compute and plot FTA rate maps
-    rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events = compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=N_BINS, filter_size=1.5)
+#     # Compute and plot FTA rate maps
+#     rate_maps_per_run, occupancy_per_run, rate_maps_avg, occupancy_map, average_events = compute_fta_rate_maps(runs_states, runs_out_arrays, n_bins=N_BINS, filter_size=1.5)
 
-    # Plot average per unit across runs
-    plot_fta_rate_maps(rate_maps_avg, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename="fta_rate_maps_avg.png")
-    plot_occupancy_map(occupancy_map, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename="occupancy_avg.png")
+#     # Plot average per unit across runs
+#     plot_fta_rate_maps(rate_maps_avg, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename="fta_rate_maps_avg.png")
+#     plot_occupancy_map(occupancy_map, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename="occupancy_avg.png")
 
-    # Plot per run
-    for run_idx, (rate_maps, occupancy) in enumerate(zip(rate_maps_per_run, occupancy_per_run)):
-        plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_maps_run{run_idx}.png")
-        plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"occupancy_run{run_idx}.png")
+#     # Plot per run
+#     for run_idx, (rate_maps, occupancy) in enumerate(zip(rate_maps_per_run, occupancy_per_run)):
+#         plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_maps_run{run_idx}.png")
+#         plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"occupancy_run{run_idx}.png")
 
-    # Average across runs
-    plot_fta_average_units_rate_map(rate_maps_avg, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename=f"fta_rate_map_avg_units.png")
+#     # Average across runs
+#     plot_fta_average_units_rate_map(rate_maps_avg, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}"), filename=f"fta_rate_map_avg_units.png")
 
-    # Per run
-    for run_idx, rate_maps in enumerate(rate_maps_per_run):
-        plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_map_avg_units_run{run_idx}.png")
+#     # Per run
+#     for run_idx, rate_maps in enumerate(rate_maps_per_run):
+#         plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"run_{run_idx+1}"), filename=f"fta_rate_map_avg_units_run{run_idx}.png")
 
  
     
