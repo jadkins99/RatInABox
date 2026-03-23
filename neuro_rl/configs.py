@@ -6,6 +6,7 @@ FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 N_BINS = 20
+N_PLACECELLS = 50
 
 #TASK CONSTANTS
 DT = 0.1 # Time step

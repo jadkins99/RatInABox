@@ -34,27 +34,26 @@ def ego_to_allo(v_ego, head_direction):
     v_allo = ratinabox.utils.rotate(v_ego, -bearing) #bearing measured clockwise from north, so we rotate anticlockwise by -bearing
     return v_allo
 
-def plot_rate_maps(env, ag, actor, critic, goal_pos, reward_radius, reward=False, trajectory=False, save_dir=None):
+def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, reward=False, trajectory=False, save_dir='figures'):
     
-    if save_dir is not None:
-        os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
 
     if reward:
         fig, ax = plot_reward_history(env)
-        if save_dir is not None:
-            fig.savefig(os.path.join(save_dir, "reward_history.png"))
+        fig.savefig(os.path.join(save_dir, "reward_history.png"))
 
     fig, ax = critic.plot_rate_map()
     fig.suptitle("Value function")
-    if save_dir is not None:
-        fig.savefig(os.path.join(save_dir, "value_function.png"))
+    fig.savefig(os.path.join(save_dir, "value_function.png"))
 
     fig, ax = actor.plot_rate_map(zero_center=True)
     fig.suptitle("Policy")
     ax[0].set_title("Vx")
     ax[1].set_title("Vy")
-    if save_dir is not None:
-        fig.savefig(os.path.join(save_dir, "policy.png"))
+    fig.savefig(os.path.join(save_dir, "policy.png"))
+
+    fig, ax = placecells.plot_place_cell_locations()
+    fig.savefig(os.path.join(save_dir, "place_cell_locations.png"))
 
     if trajectory:
         fig, ax = ag.plot_trajectory(
@@ -63,8 +62,7 @@ def plot_rate_maps(env, ag, actor, critic, goal_pos, reward_radius, reward=False
             t_end=env.episodes['start'][0]
         )
         display_reward_patch(fig, ax, reward_pos=goal_pos, reward_radius=reward_radius)
-        if save_dir is not None:
-            fig.savefig(os.path.join(save_dir, "trajectory.png"))
+        fig.savefig(os.path.join(save_dir, "trajectory.png"))
 
 def plot_dead_neurons_over_time(x,y,x_label,y_label, save = False, filename = None):
 

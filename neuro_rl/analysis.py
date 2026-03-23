@@ -108,21 +108,7 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
 
 
 def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
-    """
-    Helper to compute rate map for a single set of positions and traces.
 
-    Args:
-        position:    np.array of shape (timesteps, 2)
-        trace:       np.array of shape (timesteps, n_units)
-        n_bins:      number of spatial bins
-        filter_size: sigma for gaussian smoothing (None = no smoothing)
-        buffer:      buffer for binning
-
-    Returns:
-        rate_maps:     np.array of shape (n_units, n_bins, n_bins)
-        occupancy_map: np.array of shape (n_bins, n_bins)
-        average_events: np.array of shape (n_units,)
-    """
     len_recording = trace.shape[0]
     n_units = trace.shape[1]
 
@@ -136,8 +122,16 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
         rate_maps[:, x, y] += trace[t, :]
         count_map[x, y] += 1
 
-    nan_map = np.zeros_like(count_map) * np.nan
-    nan_map[np.where(count_map)[0], np.where(count_map)[1]] = 1.0
+    # Keep original count_map before smoothing
+    count_map_raw = count_map.copy()
+
+    # NaN mask from raw count_map — reflects truly visited bins
+    nan_map = np.zeros_like(count_map_raw) * np.nan
+    nan_map[np.where(count_map_raw)[0], np.where(count_map_raw)[1]] = 1.0
+
+    # Normalize BEFORE smoothing using raw count_map
+    for unit in range(n_units):
+        rate_maps[unit] = rate_maps[unit] / np.where(count_map_raw > 0, count_map_raw, 1)
 
     if filter_size is not None:
         rate_maps = gaussian_filter1d(gaussian_filter1d(rate_maps, sigma=filter_size, axis=1),
@@ -145,10 +139,11 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
         count_map = gaussian_filter1d(gaussian_filter1d(count_map, sigma=filter_size, axis=0),
                                       sigma=filter_size, axis=1)
 
+    # Apply nan_map AFTER smoothing to mask obstacle/unvisited bins
     for unit in range(n_units):
-        rate_maps[unit] = (rate_maps[unit] / count_map) * nan_map
+        rate_maps[unit] = rate_maps[unit] * nan_map
 
-    occupancy_map  = count_map / len_recording
+    occupancy_map  = count_map_raw / len_recording
     average_events = np.nanmean(trace, axis=0)
 
     return rate_maps, occupancy_map, average_events
