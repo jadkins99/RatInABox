@@ -208,11 +208,16 @@ def run_experiment(seed, env_shape="empty"):
 
     plot_rate_maps(env, ag, placecells, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR,f"env_{env_shape}", f"seed_{seed}"))
 
-    rate_maps, occupancy, _ = compute_fta_rate_map_single(all_episodes_state, all_out_arrays, n_bins=N_BINS, filter_size=0.1)
+    rate_maps, occupancy = compute_fta_rate_map_single(all_episodes_state, all_out_arrays, n_bins=N_BINS, filter_size=1.5)
     plot_fta_rate_maps(rate_maps, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_maps_seed_{seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"occupancy_seed_{seed}.png")
 
+    rate_maps_obs, occupancy_obs = compute_fta_rate_map_single(all_episodes_state, all_out_arrays, n_bins=N_BINS, filter_size=1.5, obstacles=OBSTACLES[env_shape])
+    plot_fta_rate_maps(rate_maps_obs, n_cols=N_BINS, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_maps_obs_seed_{seed}.png")
+    plot_occupancy_map(occupancy_obs, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"occupancy_obs_seed_{seed}.png")
+
     plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_map_avg_units_seed_{seed}.png")
+    plot_fta_average_units_rate_map(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_map_avg_units_obs_seed_{seed}.png")
 
 
 if __name__ == "__main__":

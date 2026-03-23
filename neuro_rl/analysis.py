@@ -107,7 +107,24 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
 
-def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
+
+def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer, obstacles=None):
+    """
+    Helper to compute rate map for a single set of positions and traces.
+
+    Args:
+        position:    np.array of shape (timesteps, 2)
+        trace:       np.array of shape (timesteps, n_units)
+        n_bins:      number of spatial bins
+        filter_size: sigma for gaussian smoothing (None = no smoothing)
+        buffer:      buffer for binning
+        obstacles:   list of dicts with 'x_min', 'x_max', 'y_min', 'y_max' (optional)
+
+    Returns:
+        rate_maps:      np.array of shape (n_units, n_bins, n_bins)
+        occupancy_map:  np.array of shape (n_bins, n_bins)
+        average_events: np.array of shape (n_units,)
+    """
 
     len_recording = trace.shape[0]
     n_units = trace.shape[1]
@@ -129,6 +146,20 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
     nan_map = np.zeros_like(count_map_raw) * np.nan
     nan_map[np.where(count_map_raw)[0], np.where(count_map_raw)[1]] = 1.0
 
+    # Explicitly mask obstacle bins in nan_map
+    if obstacles is not None and len(obstacles) > 0:
+        bin_edges = np.linspace(0, 1, n_bins + 1)
+        for obs in obstacles:
+            for ix in range(n_bins):
+                for iy in range(n_bins):
+                    bin_x_min = bin_edges[ix]
+                    bin_x_max = bin_edges[ix + 1]
+                    bin_y_min = bin_edges[iy]
+                    bin_y_max = bin_edges[iy + 1]
+                    if (bin_x_min <= obs['x_max'] and bin_x_max >= obs['x_min'] and
+                        bin_y_min <= obs['y_max'] and bin_y_max >= obs['y_min']):
+                        nan_map[ix, iy] = np.nan
+
     # Normalize BEFORE smoothing using raw count_map
     for unit in range(n_units):
         rate_maps[unit] = rate_maps[unit] / np.where(count_map_raw > 0, count_map_raw, 1)
@@ -144,12 +175,11 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer):
         rate_maps[unit] = rate_maps[unit] * nan_map
 
     occupancy_map  = count_map_raw / len_recording
-    average_events = np.nanmean(trace, axis=0)
 
-    return rate_maps, occupancy_map, average_events
+    return rate_maps, occupancy_map
 
 
-def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
+def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles = None):
     """
     Compute rate map for a single set of states and out_arrays (e.g. one run).
 
@@ -174,14 +204,14 @@ def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None,
     position = np.array(all_positions)
     trace    = np.array(all_outputs)
 
-    rate_maps, occupancy_map, average_events = _compute_single_rate_map(
-        position, trace, n_bins, filter_size, buffer
+    rate_maps, occupancy_map = _compute_single_rate_map(
+        position, trace, n_bins, filter_size, buffer, obstacles
     )
 
-    return rate_maps, occupancy_map, average_events
+    return rate_maps, occupancy_map
 
 
-def compute_fta_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5):
+def compute_fta_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles=None):
     """
     Compute average rate map across all runs.
 
@@ -207,11 +237,11 @@ def compute_fta_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filte
     position = np.array(all_positions)
     trace    = np.array(all_outputs)
 
-    rate_maps_avg, occupancy_map, average_events = _compute_single_rate_map(
-        position, trace, n_bins, filter_size, buffer
+    rate_maps_avg, occupancy_map = _compute_single_rate_map(
+        position, trace, n_bins, filter_size, buffer, obstacles
     )
 
-    return rate_maps_avg, occupancy_map, average_events
+    return rate_maps_avg, occupancy_map
 
 def get_active_bins_from_run_bins(run_bins, threshold=0.99):
     """

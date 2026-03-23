@@ -6,7 +6,7 @@ FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 N_BINS = 20
-N_PLACECELLS = 50
+N_PLACECELLS = 5
 
 #TASK CONSTANTS
 DT = 0.1 # Time step
@@ -17,6 +17,11 @@ WALL = None
 GOAL_RADIUS = 0.1
 REWARD = 1 # Reward
 REWARD_DURATION = 1 # Reward duration
+OBSTACLES = {
+    "empty": [],
+    "obstacle_near_goal": [{"x_min": 0.30, "x_max": 0.45, "y_min": 0.30, "y_max": 0.45}],
+    "obstacle_far_goal":  [{"x_min": 0.85, "x_max": 1.0,  "y_min": 0.85, "y_max": 1.0}],
+}
 
 #LEARNING CONSTANTS
 FTA_ETA = 0.1 # FTA learning rate
