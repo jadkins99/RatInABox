@@ -34,7 +34,7 @@ def ego_to_allo(v_ego, head_direction):
     v_allo = ratinabox.utils.rotate(v_ego, -bearing) #bearing measured clockwise from north, so we rotate anticlockwise by -bearing
     return v_allo
 
-def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, reward=False, trajectory=False, save_dir='figures'):
+def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, time, reward=False, trajectory=False, save_dir='figures'):
     
     os.makedirs(save_dir, exist_ok=True)
 
@@ -44,16 +44,16 @@ def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, 
 
     fig, ax = critic.plot_rate_map()
     fig.suptitle("Value function")
-    fig.savefig(os.path.join(save_dir, "value_function.png"))
+    fig.savefig(os.path.join(save_dir, f"value_function_{time}.png"))
 
     fig, ax = actor.plot_rate_map(zero_center=True)
     fig.suptitle("Policy")
     ax[0].set_title("Vx")
     ax[1].set_title("Vy")
-    fig.savefig(os.path.join(save_dir, "policy.png"))
+    fig.savefig(os.path.join(save_dir, f"policy_{time}.png"))
 
     fig, ax = placecells.plot_place_cell_locations()
-    fig.savefig(os.path.join(save_dir, "place_cell_locations.png"))
+    fig.savefig(os.path.join(save_dir, f"place_cell_locations_{time}.png"))
 
     if trajectory:
         fig, ax = ag.plot_trajectory(
