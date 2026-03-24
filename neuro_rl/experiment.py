@@ -234,7 +234,18 @@ if __name__ == "__main__":
     parser.add_argument("--env_shape", type=str, default="empty")
     args = parser.parse_args()
 
-    run_experiment(seed=args.seed, env_shape=args.env_shape)
+    # run_experiment(seed=args.seed, env_shape=args.env_shape)
+
+    runs_out_arrays = load_runs_out_arrays(DATA_DIR, args.env_shape)
+    dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_timestep.png"))
+    dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_episode.png"))
+    bin_counts = compute_bin_counts_per_timestep(runs_out_arrays, num_bins=N_BINS, threshold=0.1)
+    plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}"))
+
+
+
     
 # First, compute rate maps per seed and then average them.
 

@@ -6,7 +6,7 @@ FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 N_BINS = 20
-N_PLACECELLS = 5
+N_PLACECELLS = 50
 
 #TASK CONSTANTS
 DT = 0.1 # Time step
@@ -28,6 +28,6 @@ FTA_ETA = 0.1 # FTA learning rate
 TAU = 5 # Discount time horizon
 TAU_E = 5 # Eligibility trace time horizon
 ETA = 0.01 # Learning rate 
-N_EPISODES = 3 # Number of episodes
+N_EPISODES = 5000 # Number of episodes
 L2 = 0.000 # L2 regularization
 
