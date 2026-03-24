@@ -201,10 +201,10 @@ def run_experiment(seed, env_shape="empty"):
     fta = find_layer_module(critic.NeuralNetworkModule, 'FTA')
     _, all_episodes_time, all_episodes_state, all_episodes_bins, _, all_out_arrays = run_multiple_episodes_with_fta(n_episodes=N_EPISODES,env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,fta=fta,num_bins=N_BINS,time_limit=T_TIMEOUT)
 
-    save_data(all_episodes_time, os.path.join(DATA_DIR, f'all_episodes_time_seed_{seed}'))
-    save_data(all_episodes_state, os.path.join(DATA_DIR, f'all_episodes_states_seed_{seed}'))
-    save_data(all_episodes_bins, os.path.join(DATA_DIR, f'all_episodes_bins_seed_{seed}'))
-    save_data(all_out_arrays, os.path.join(DATA_DIR, f'all_out_arrays_seed_{seed}'))
+    save_data(all_episodes_time, os.path.join(DATA_DIR, f"env_{env_shape}", f'all_episodes_time_seed_{seed}'))
+    save_data(all_episodes_state, os.path.join(DATA_DIR, f"env_{env_shape}", f'all_episodes_states_seed_{seed}'))
+    save_data(all_episodes_bins, os.path.join(DATA_DIR, f"env_{env_shape}", f'all_episodes_bins_seed_{seed}'))
+    save_data(all_out_arrays, os.path.join(DATA_DIR,f"env_{env_shape}", f'all_out_arrays_seed_{seed}'))
 
     plot_rate_maps(env, ag, placecells, actor, critic, GOAL_POS, GOAL_RADIUS, reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR,f"env_{env_shape}", f"seed_{seed}"))
 
