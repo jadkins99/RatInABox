@@ -131,7 +131,10 @@ def _make_networks(cfg: ExperimentConfig, n_in: int):
 
 
 def _ego_to_allo(v_ego, head_direction):
-    """Convert egocentric velocity to allocentric."""
+    """Convert egocentric velocity to allocentric.
+
+    Note: also available as ``viz.ego_to_allo``.
+    """
     bearing = ratinabox.utils.get_bearing(head_direction)
     return ratinabox.utils.rotate(v_ego, -bearing)
 
