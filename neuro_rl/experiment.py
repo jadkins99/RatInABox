@@ -15,7 +15,7 @@ from training_utils import run_episode
 from hook import create_fta_hook, find_layer_module
 from configs import *
 from plotting_utils import plot_bin_counts_per_percentage, plot_dead_neurons_over_time, plot_bin_counts_per_percentage, plot_fta_average_units_rate_map, plot_occupancy_map, plot_rate_maps, plot_fta_rate_maps
-from analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_fta_rate_map_single
+from analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_fta_rate_map_single, compute_dead_neurons_per_timestep_single, compute_bin_counts_per_timestep_single
 
 def get_environment(shape="empty", dt=DT, episode_terminate_delay=REWARD_DURATION, teleport_on_reset=True):
     if shape == "empty":
@@ -220,6 +220,12 @@ def run_experiment(seed, env_shape="empty"):
 
     plot_fta_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_map_avg_units_seed_{seed}.png")
     plot_fta_average_units_rate_map(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}"), filename=f"fta_rate_map_avg_units_obs_seed_{seed}.png")
+
+    #Dead neurons
+    dead_neurons = compute_dead_neurons_per_timestep_single(all_out_arrays)
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", f"seed_{seed}", "dead_neurons_per_timestep.png"))
+    bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, N_BINS)
+    plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}",f"seed_{seed}"))
 
 
 if __name__ == "__main__":

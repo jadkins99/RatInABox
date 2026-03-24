@@ -1,6 +1,31 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
+
+def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
+    """
+    Computes the percentage of inactive (dead) features per timestep for a single run.
+
+    Args:
+        out_arrays: list[episodes][timesteps] of FTA output vectors
+        thres:      threshold below which a feature is considered inactive
+
+    Returns:
+        dead_percent: array of % inactive features per timestep
+    """
+    # Flatten episodes into a single sequence of timesteps
+    all_timesteps = []
+    for ep_out in out_arrays:
+        all_timesteps.extend(ep_out)
+
+    dead_percent = []
+    for timestep_values in all_timesteps:
+        timestep_values = np.array(timestep_values)
+        inactive = timestep_values < thres
+        dead_percent.append(inactive.mean() * 100)
+
+    return np.array(dead_percent)
+
 def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
     # Flatten episodes per run
     flattened_runs = []
@@ -107,6 +132,32 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
 
+def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
+    """
+    Compute bin counts (> threshold) for each timestep for a single run.
+
+    Args:
+        out_arrays: list[episodes][timesteps] of FTA output vectors
+        num_bins:   number of bins to split the FTA output into
+        threshold:  threshold above which a feature is considered active
+
+    Returns:
+        bin_counts: np.array of shape (timesteps, num_bins)
+    """
+
+    # Flatten episodes into a single sequence of timesteps
+    all_timesteps = []
+    for ep in out_arrays:
+        all_timesteps.extend(ep)
+
+    all_counts = []
+    for timestep_values in all_timesteps:
+        vec = np.array(timestep_values)
+        bins = np.array_split(vec, num_bins)
+        counts = [np.sum(b > threshold) for b in bins]
+        all_counts.append(counts)
+
+    return np.array(all_counts)  # shape: (timesteps, num_bins)
 
 def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer, obstacles=None):
     """
