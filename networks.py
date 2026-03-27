@@ -27,7 +27,11 @@ class Backbone(nn.Module):
 
     For FTA mode, layers *before* the FTA use ReLU, and the FTA replaces the
     final hidden activation:
-        Linear -> ReLU -> ... -> Linear -> FTA -> Linear
+        Linear -> ReLU -> ... -> Linear -> LayerNorm -> FTA -> Linear
+
+    A ``LayerNorm`` is inserted immediately before FTA so that the
+    pre-FTA activations are normalized to zero mean / unit variance,
+    removing sensitivity to the tiling bound hyperparameter.
 
     Args:
         n_in:  input dimension
@@ -89,6 +93,7 @@ class Backbone(nn.Module):
             layers.append(nn.Linear(sizes_pre[i], sizes_pre[i + 1]))
             layers.append(nn.ReLU())
 
+        layers.append(nn.LayerNorm(sizes_pre[-1]))
         layers.append(fta_module)
 
         for i in range(len(sizes_post) - 1):
@@ -181,9 +186,15 @@ def make_fta_critic(
     input_max: float = 1.0,
     n_tiles: int = 10,
     n_tilings: int = 1,
-    eta: float = 1.0,
+    eta: float | None = None,
 ) -> Backbone:
-    """Return an FTA backbone suitable for the critic (1-D output)."""
+    """Return an FTA backbone suitable for the critic (1-D output).
+
+    If *eta* is ``None`` (default), it is set to the tile width
+    ``(input_max - input_min) / n_tiles`` so that ``eta == delta``.
+    """
+    if eta is None:
+        eta = (input_max - input_min) / n_tiles
     fta = FTA(
         params={
             'n_tiles': n_tiles,

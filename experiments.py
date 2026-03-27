@@ -68,7 +68,7 @@ class ExperimentConfig:
     critic_hidden: list = field(default_factory=lambda: [20, 20])
 
     # FTA-specific
-    fta_eta: float = 1.0
+    fta_eta: float | None = None  # None → eta=delta (tile width)
     fta_input_min: float = 0.0
     fta_input_max: float = 1.0
     fta_n_tiles: int = 10
@@ -83,10 +83,6 @@ class ExperimentConfig:
     # Whether the actor uses egocentric actions
     egocentric_actions: bool = False
 
-
-# ---------------------------------------------------------------------------
-# Reusable helpers (previously inlined in the notebook)
-# ---------------------------------------------------------------------------
 
 def _make_env_and_agent(cfg: ExperimentConfig):
     """Build a SpatialGoalEnvironment + Agent from *cfg*."""

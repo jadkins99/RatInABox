@@ -162,7 +162,7 @@ def plot_sparsity_map(
             interpolation="nearest",
             zorder=0,
             vmin=0,
-            vmax=0.4,
+            vmax=1.0,
         )
         ax.set_title(title)
         ax.set_xlabel("x")
