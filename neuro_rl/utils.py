@@ -58,7 +58,7 @@ def load_runs_out_arrays(data_dir, env_shape):
 
         file_path = os.path.join(
             seed_path,
-            f"all_out_arrays_seed_{seed_num}.npy"
+            f"all_out_arrays_seed_{seed_num}"
         )
 
         if not os.path.exists(file_path):

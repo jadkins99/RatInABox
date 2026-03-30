@@ -17,7 +17,6 @@ class BaseActorCritic(NeuralNetworkNeurons):
             dummy_input = torch.zeros(1, n_in)
             self.params["n"] = self.params["NeuralNetworkModule"](dummy_input).shape[1]
 
-
         super().__init__(Agent, self.params)
 
         self.use_eligibility_traces = self.params["eligibility_traces"]
