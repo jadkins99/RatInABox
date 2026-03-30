@@ -68,7 +68,7 @@ class BaseActorCritic(NeuralNetworkNeurons):
             tau_z = self.tau_z
             x = param.grad.detach().numpy()
             e = self.traces[j]
-            self.traces[j] = (1 - dt / tau_z) * e + (dt / tau_z) * x
+            self.traces[j] = (1 - dt / tau_z) * e + dt * x
             param.grad = torch.tensor(
                 self.traces[j] * td_error * self.Agent.dt, dtype=torch.float
             )
