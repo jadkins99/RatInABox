@@ -97,49 +97,24 @@ class ActivationRecorder:
     
 
 
-class ActivationRecorderTimestep:
-    """
-    Records activations per timestep (NOT grouped by state).
-
-    Output format:
-        data[name] = [array_t0, array_t1, ..., array_tT]
-    """
-
-    def __init__(self):
-        self.data = {}
-        self.handles = {}
-
-    def attach(self, module, name):
-        if name in self.handles:
-            raise ValueError(f"{name} already attached")
-
-        self.data[name] = []
-
-        def hook(mod, inputs, output):
-            self.data[name].append(output.detach().cpu().numpy())
-
-        self.handles[name] = module.register_forward_hook(hook)
-
-    def get(self, name):
-        return self.data[name]
-
-    def detach_all(self):
-        for h in self.handles.values():
-            h.remove()
-        self.handles.clear()
-
-
 # ---------------------------------------------------------------------------
 # Utility: find specific layers inside a network
 # ---------------------------------------------------------------------------
 
-def find_fta_module(net: nn.Module) -> FTA:
-    """Return the first ``FTA`` module inside *net*, or raise."""
-    for m in net.modules():
-        if isinstance(m, FTA):
-            return m
-    raise ValueError("No FTA module found in the network.")
+def find_layer_module(net: torch.nn.Module, layer_name: str):
+    '''Find layer in a network and print the type of each module as it searches'''
+    layer_class = None
+    
+    if layer_name == 'FTA':
+        layer_class = FTA
+    elif layer_name == 'ReLU':
+        layer_class = torch.nn.ReLU
 
+    for m in net.modules():
+        if isinstance(m, layer_class):
+            return m
+    raise ValueError(f"No {layer_class.__name__} module found in the network.")
+    
 
 def find_penultimate_layer(net: nn.Module) -> nn.Module:
     """Return the layer immediately before the last ``nn.Linear`` in *net*.
