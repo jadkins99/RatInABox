@@ -29,20 +29,20 @@ def load_data(filepath):
     with open(filepath, "rb") as f:
         return pickle.load(f)
 
-def load_runs_out_arrays(data_dir, env_shape):
+def load_runs_bins(data_dir, env_shape):
     """
-    Load runs_out_arrays from saved numpy files.
+    Load runs_bins from saved numpy files.
 
     Args:
         data_dir:   base data directory (e.g., "data")
         env_shape:  environment name (used in folder name)
 
     Returns:
-        runs_out_arrays: list of runs (each run is episodes × timesteps × features)
+        runs_bins: list of runs (each run is episodes × timesteps × features)
     """
 
     env_path = os.path.join(data_dir, f"env_{env_shape}")
-    runs_out_arrays = []
+    runs_bins = []
 
     # sort to keep seeds in order
     seed_folders = sorted([
@@ -58,7 +58,7 @@ def load_runs_out_arrays(data_dir, env_shape):
 
         file_path = os.path.join(
             seed_path,
-            f"all_out_arrays_seed_{seed_num}"
+            f"all_episodes_bins_seed_{seed_num}"
         )
 
         if not os.path.exists(file_path):
@@ -66,6 +66,6 @@ def load_runs_out_arrays(data_dir, env_shape):
             continue
 
         data = np.load(file_path, allow_pickle=True)
-        runs_out_arrays.append(data)
+        runs_bins.append(data)
 
-    return runs_out_arrays
+    return runs_bins

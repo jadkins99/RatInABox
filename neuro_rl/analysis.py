@@ -95,15 +95,23 @@ def compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1):
 
     return np.array(mean_dead_percent)
 
+
 def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     """
-    Compute bin counts (> threshold) for each timestep, averaged across available runs.
-    
+    Compute bin activation counts (> threshold) for each timestep,
+    averaged across available runs.
+
+    Args:
+        runs_out_arrays: list[runs][episodes][timesteps] of FTA outputs
+                         Each timestep: shape (num_outputs, num_bins)
+        num_bins:        number of bins (dimension of each output vector)
+        threshold:       threshold above which a feature is considered active
+
     Returns:
-        bin_counts : np.array of shape (timesteps, num_bins)
+        bin_counts: np.array of shape (timesteps, num_bins)
     """
 
-    # Flatten episodes per run
+    # Flatten episodes per run → list[runs][timesteps]
     flattened_runs = []
     for run in runs_out_arrays:
         run_timesteps = []
@@ -121,12 +129,24 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
 
         for run in flattened_runs:
             if t < len(run):
-                vec = np.array(run[t])
-                bins = np.array_split(vec, num_bins)
-                counts = [np.sum(b > threshold) for b in bins]
-                timestep_counts.append(counts)
+                # shape: (num_outputs, num_bins)
+                arr = np.array(run[t])
 
-        # average over available runs
+                # Optional sanity check
+                if arr.ndim != 2 or arr.shape[1] != num_bins:
+                    raise ValueError(
+                        f"Expected shape (num_outputs, {num_bins}), got {arr.shape}"
+                    )
+
+                # Threshold → active bins
+                active = arr > threshold
+
+                # Sum across outputs → counts per bin
+                bin_counts = np.sum(active, axis=0)
+
+                timestep_counts.append(bin_counts)
+
+        # Average across runs (only those that have this timestep)
         all_counts.append(np.mean(timestep_counts, axis=0))
 
     return np.array(all_counts)  # shape: (timesteps, num_bins)
@@ -134,15 +154,17 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
 
 def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
     """
-    Compute bin counts (> threshold) for each timestep for a single run.
+    Compute bin activation counts (> threshold) for each timestep for a single run.
 
     Args:
-        out_arrays: list[episodes][timesteps] of FTA output vectors
-        num_bins:   number of bins to split the FTA output into
+        out_arrays: list[episodes][timesteps] of FTA output arrays
+                    Each timestep is expected to have shape (num_outputs, num_bins)
+        num_bins:   number of bins (dimension of each output vector)
         threshold:  threshold above which a feature is considered active
 
     Returns:
         bin_counts: np.array of shape (timesteps, num_bins)
+                    Each row contains counts per bin across outputs
     """
 
     # Flatten episodes into a single sequence of timesteps
@@ -151,11 +173,24 @@ def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
         all_timesteps.extend(ep)
 
     all_counts = []
+
     for timestep_values in all_timesteps:
-        vec = np.array(timestep_values)
-        bins = np.array_split(vec, num_bins)
-        counts = [np.sum(b > threshold) for b in bins]
-        all_counts.append(counts)
+        # Convert to array: shape (num_outputs, num_bins)
+        arr = np.array(timestep_values)
+
+        # Optional sanity check (can remove later if confident)
+        if arr.ndim != 2 or arr.shape[1] != num_bins:
+            raise ValueError(
+                f"Expected shape (num_outputs, {num_bins}), got {arr.shape}"
+            )
+
+        # Apply threshold to determine active bins
+        active = arr > threshold
+
+        # Sum across outputs → counts per bin
+        bin_counts = np.sum(active, axis=0)
+
+        all_counts.append(bin_counts)
 
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
