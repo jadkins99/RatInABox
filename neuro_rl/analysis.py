@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
-
 def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
     """
     Computes the percentage of inactive (dead) features per timestep for a single run.
@@ -13,7 +12,6 @@ def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
     Returns:
         dead_percent: array of % inactive features per timestep
     """
-    # Flatten episodes into a single sequence of timesteps
     all_timesteps = []
     for ep_out in out_arrays:
         all_timesteps.extend(ep_out)
@@ -26,7 +24,15 @@ def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
 
     return np.array(dead_percent)
 
+
 def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
+    """
+    Computes the mean and standard error of dead neurons per timestep across runs.
+
+    Returns:
+        mean_dead: np.array (timesteps,)
+        se_dead:   np.array (timesteps,)
+    """
     # Flatten episodes per run
     flattened_runs = []
     for run in runs_out_arrays:
@@ -34,52 +40,64 @@ def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
         for ep_out in run:
             run_timesteps.extend(ep_out)
         flattened_runs.append(run_timesteps)
-    
-    # Find maximum number of timesteps across runs
+
     max_timesteps = max(len(r) for r in flattened_runs)
-    
-    # Compute percentage of dead neurons per timestep, averaging only over available runs
-    dead_percent = []
+
+    mean_dead = []
+    se_dead = []
+
     for t in range(max_timesteps):
-        timestep_values = []
+        per_run_values = []
+
         for run in flattened_runs:
             if t < len(run):
-                timestep_values.append(run[t])
-        
-        timestep_values = np.array(timestep_values)  # shape: (available_runs, n_features)
-        inactive = timestep_values < thres
-        percent_inactive = inactive.mean(axis=1) * 100  # % per run
-        dead_percent.append(percent_inactive.mean())    # average across available runs
-    
-    return np.array(dead_percent)
+                timestep_values = np.array(run[t])
+                inactive = timestep_values < thres
+                percent = inactive.mean() * 100
+                per_run_values.append(percent)
+
+        per_run_values = np.array(per_run_values)
+
+        mean_dead.append(np.mean(per_run_values))
+
+        if len(per_run_values) > 1:
+            se = np.std(per_run_values, ddof=1) / np.sqrt(len(per_run_values))
+        else:
+            se = 0.0
+
+        se_dead.append(se)
+
+    return np.array(mean_dead), np.array(se_dead)
 
 
 def compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1):
     """
-    Computes the percentage of inactive neurons per episode.
-    
+    Computes the mean and standard error of dead neurons per episode.
+
     Procedure:
         1. Compute inactivity per timestep
         2. Average across timesteps within each episode
-        3. Average across runs (only over runs that have data at that episode)
+        3. Average across runs (only runs that have that episode)
 
     Args:
         runs_out_arrays: list[runs][episodes][timesteps][features]
         thres: threshold below which a feature is considered inactive
 
     Returns:
-        mean_dead_percent: array (% dead neurons per episode averaged across available runs)
+        mean_dead: np.array (episodes,)
+        se_dead:   np.array (episodes,)
     """
 
     max_episodes = max(len(run) for run in runs_out_arrays)
 
+    # Store per-run episode values
     dead_percent_runs = []
 
     for run in runs_out_arrays:
         run_episode_values = []
 
         for ep in range(len(run)):
-            ep_out = np.array(run[ep])  # shape: (timesteps, features)
+            ep_out = np.array(run[ep])  # (timesteps, features)
             inactive = ep_out < thres
             percent_timestep = inactive.mean(axis=1) * 100
             percent_episode = percent_timestep.mean()
@@ -87,14 +105,23 @@ def compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1):
 
         dead_percent_runs.append(run_episode_values)
 
-    # average per episode only over runs that have data at that episode
-    mean_dead_percent = []
+    mean_dead = []
+    se_dead = []
+
     for ep in range(max_episodes):
         ep_values = [run[ep] for run in dead_percent_runs if ep < len(run)]
-        mean_dead_percent.append(np.mean(ep_values))
+        ep_values = np.array(ep_values)
 
-    return np.array(mean_dead_percent)
+        mean_dead.append(np.mean(ep_values))
 
+        if len(ep_values) > 1:
+            se = np.std(ep_values, ddof=1) / np.sqrt(len(ep_values))
+        else:
+            se = 0.0
+
+        se_dead.append(se)
+
+    return np.array(mean_dead), np.array(se_dead)
 
 def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     """

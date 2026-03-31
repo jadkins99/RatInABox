@@ -241,10 +241,10 @@ if __name__ == "__main__":
     for env_shape in envs:
 
         runs_bins = load_runs_bins(DATA_DIR, env_shape)
-        dead_neurons_per_timestep = compute_dead_neurons_per_timestep(runs_bins, thres=0.1)
-        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep)), y =dead_neurons_per_timestep, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_timestep.png"))
-        dead_neurons_per_episode = compute_dead_neurons_per_episode(runs_bins, thres=0.1)
-        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode)), y =dead_neurons_per_episode, x_label='episodes', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_episode.png"))
+        dead_neurons_per_timestep_mean, dead_neurons_per_timestep_se = compute_dead_neurons_per_timestep(runs_bins, thres=0.1)
+        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_timestep_mean)), y =dead_neurons_per_timestep_mean, x_label='timesteps', y_label='%\ dead neurons', se=dead_neurons_per_timestep_se, save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_timestep.png"))
+        dead_neurons_per_episode_mean, dead_neurons_per_episode_se = compute_dead_neurons_per_episode(runs_bins, thres=0.1)
+        plot_dead_neurons_over_time(x=np.arange(len(dead_neurons_per_episode_mean)), y =dead_neurons_per_episode_mean, x_label='episodes', y_label='%\ dead neurons', se=dead_neurons_per_episode_se, save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}", "dead_neurons_per_episode.png"))
         bin_counts = compute_bin_counts_per_timestep(runs_bins, num_bins=N_BINS, threshold=0.1)
         plot_bin_counts_per_percentage(bin_counts, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, f"env_{env_shape}"))
 

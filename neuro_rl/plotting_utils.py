@@ -64,10 +64,46 @@ def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, 
         display_reward_patch(fig, ax, reward_pos=goal_pos, reward_radius=reward_radius)
         fig.savefig(os.path.join(save_dir, "trajectory.png"))
 
-def plot_dead_neurons_over_time(x,y,x_label,y_label, save = False, filename = None):
 
-    plt.figure(figsize=(8,4))
-    plt.plot(x, y, color='red', lw=2)
+def plot_dead_neurons_over_time(
+    x,
+    y,
+    x_label,
+    y_label,
+    se=None,          
+    save=False,
+    filename=None
+):
+    """
+    Plot dead neurons over time with optional standard error shading.
+
+    Args:
+        x: x-axis values
+        y: mean values
+        x_label: label for x-axis
+        y_label: label for y-axis
+        se: standard error (same shape as y)
+        save: whether to save the figure
+        filename: path to save the figure
+    """
+
+    plt.figure(figsize=(8, 4))
+
+    # Main line
+    plt.plot(x, y, lw=2)
+
+    # Add standard error shading
+    if se is not None:
+        y = np.array(y)
+        se = np.array(se)
+
+        plt.fill_between(
+            x,
+            y - se,
+            y + se,
+            alpha=0.3
+        )
+
     plt.xlabel(x_label)
     plt.ylabel(y_label)
 
