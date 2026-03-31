@@ -1,14 +1,15 @@
-"""Three sets of heatmaps (before & after learning):
+"""Four sets of heatmaps (before & after learning):
 
 1. FTA agent: 20 per-feature heatmaps (sum over tiles from FTA output)
 2. FTA agent: 20 post-compression ReLU heatmaps
-3. Baseline (no FTA): 20 ReLU heatmaps
+3. Baseline: 20 ReLU1 heatmaps (after first linear)
+4. Baseline: 20 ReLU2 heatmaps (after second linear)
 
 FTA architecture:
-  Linear(50->20) -> LayerNorm(20) -> FTA -> Linear(220->20) -> ReLU -> Linear(20->1)
+  Linear(50->20) -> LayerNorm(20, non-adaptive) -> FTA -> Linear(220->20) -> ReLU -> Linear(20->1)
 
 Baseline architecture:
-  Linear(50->20) -> ReLU -> Linear(20->1)
+  Linear(50->20) -> ReLU1 -> Linear(20->20) -> ReLU2 -> Linear(20->1)
 """
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'mnt', 'RatInABox'))
@@ -32,28 +33,25 @@ from activation_recorder import ActivationRecorder
 from viz import plot_sparsity_map, display_reward_patch
 from networks import Backbone, VxVyGaussianHead
 
-OUT_DIR = os.path.join(os.path.dirname(__file__), 'mnt', 'RatInABox')
+OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load PyPI FTA
+import importlib.metadata as _meta
+_fta_dist = _meta.distribution('fuzzy-tiling-activation')
+_fta_pkg_dir = str(_fta_dist._path.parent)
+_fta_torch_path = os.path.join(_fta_pkg_dir, 'fta', 'torch.py')
 spec = importlib.util.spec_from_file_location(
-    'fta_pypi_torch',
-    '/sessions/focused-laughing-newton/.local/lib/python3.10/site-packages/fta/torch.py'
-)
+    'fta_pypi_torch', _fta_torch_path)
 fta_pypi_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fta_pypi_mod)
 PyPiFTA = fta_pypi_mod.FTA
 
 N_TILES = 10
 BOUND = 1.0
-TILE_WIDTH = 2 * BOUND / N_TILES  # 0.2
 PRE_FTA_DIM = 20
-
-class BackboneWrapper(nn.Module):
-    def __init__(self, seq):
-        super().__init__()
-        self.net = seq
-    def forward(self, x):
-        return self.net(x)
+N_PLACE_CELLS = 50
+ETA = 0.002
+N_EPISODES = 500
 
 
 def record_activations(net, modules_dict, env, ag, placecells, timesteps=2000):
@@ -124,11 +122,11 @@ def save_heatmaps_pdf(per_map, n_maps, env, cfg, pdf_path, title_fn):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# FTA agent: Linear -> LN -> FTA -> Linear(220->20) -> ReLU -> Linear(20->1)
+# FTA agent: Linear -> LN (non-adaptive) -> FTA -> Linear(220->20) -> ReLU -> Linear(20->1)
 # ══════════════════════════════════════════════════════════════════════════
 
 print("=" * 60)
-print("FTA agent: Linear -> LN -> FTA -> Linear -> ReLU -> Linear")
+print("FTA agent: Linear -> LN (non-adaptive) -> FTA -> Linear -> ReLU -> Linear")
 print("=" * 60)
 
 pypi_fta = PyPiFTA(
@@ -140,23 +138,23 @@ fta_out_dim = PRE_FTA_DIM * total_tiles  # 220
 
 post_fta_relu = nn.ReLU()
 
-critic_fta = BackboneWrapper(nn.Sequential(
-    nn.Linear(50, PRE_FTA_DIM),        # 0
-    nn.LayerNorm(PRE_FTA_DIM),          # 1
-    pypi_fta,                            # 2
-    nn.Linear(fta_out_dim, PRE_FTA_DIM), # 3: compress 220 -> 20
-    post_fta_relu,                       # 4
-    nn.Linear(PRE_FTA_DIM, 1),           # 5
-))
+critic_fta = nn.Sequential(
+    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),              # 0
+    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
+    pypi_fta,                                             # 2
+    nn.Linear(fta_out_dim, PRE_FTA_DIM),                 # 3: compress 220 -> 20
+    post_fta_relu,                                        # 4
+    nn.Linear(PRE_FTA_DIM, 1),                            # 5
+)
 print(f'\n{critic_fta}')
 
-actor_fta_nn = VxVyGaussianHead(Backbone(n_in=50, n_out=2, hidden=[50]))
+actor_fta_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_fta = ExperimentConfig(label='FTA+Linear+ReLU', n_episodes=500)
+cfg_fta = ExperimentConfig(label='FTA+Linear+ReLU', n_episodes=N_EPISODES, eta=ETA)
 env_f, ag_f = _make_env_and_agent(cfg_fta)
-pc_f = PlaceCells(ag_f, params={'n': 50})
+pc_f = PlaceCells(ag_f, params={'n': N_PLACE_CELLS})
 
-opt_fn = lambda p: torch.optim.SGD(p, lr=cfg_fta.eta, maximize=True)
+opt_fn = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
 actor_f = Actor(ag_f, params={'input_layers': [pc_f], 'NeuralNetworkModule': actor_fta_nn,
                               'tau': cfg_fta.tau, 'tau_z': cfg_fta.tau_e, 'optimizer': opt_fn})
 critic_f = Critic(ag_f, params={'input_layers': [pc_f], 'NeuralNetworkModule': critic_fta,
@@ -209,29 +207,32 @@ save_heatmaps_pdf(relu_after, PRE_FTA_DIM, env_f, cfg_fta,
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# Baseline agent (no FTA): Linear(50->20) -> ReLU -> Linear(20->1)
+# Baseline agent: Linear(50->20) -> ReLU1 -> Linear(20->20) -> ReLU2 -> Linear(20->1)
 # ══════════════════════════════════════════════════════════════════════════
 
 print("\n" + "=" * 60)
-print("Baseline agent (no FTA)")
+print("Baseline agent: Linear -> ReLU1 -> Linear -> ReLU2 -> Linear")
 print("=" * 60)
 
-baseline_relu = nn.ReLU()
+baseline_relu1 = nn.ReLU()
+baseline_relu2 = nn.ReLU()
 
-critic_base = BackboneWrapper(nn.Sequential(
-    nn.Linear(50, PRE_FTA_DIM),
-    baseline_relu,
-    nn.Linear(PRE_FTA_DIM, 1),
-))
+critic_base = nn.Sequential(
+    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),  # 0
+    baseline_relu1,                           # 1
+    nn.Linear(PRE_FTA_DIM, PRE_FTA_DIM),     # 2
+    baseline_relu2,                           # 3
+    nn.Linear(PRE_FTA_DIM, 1),               # 4
+)
 print(f'\n{critic_base}')
 
-actor_base_nn = VxVyGaussianHead(Backbone(n_in=50, n_out=2, hidden=[50]))
+actor_base_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_base = ExperimentConfig(label='Baseline (no FTA)', n_episodes=500)
+cfg_base = ExperimentConfig(label='Baseline', n_episodes=N_EPISODES, eta=ETA)
 env_b, ag_b = _make_env_and_agent(cfg_base)
-pc_b = PlaceCells(ag_b, params={'n': 50})
+pc_b = PlaceCells(ag_b, params={'n': N_PLACE_CELLS})
 
-opt_fn_b = lambda p: torch.optim.SGD(p, lr=cfg_base.eta, maximize=True)
+opt_fn_b = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
 actor_b = Actor(ag_b, params={'input_layers': [pc_b], 'NeuralNetworkModule': actor_base_nn,
                               'tau': cfg_base.tau, 'tau_z': cfg_base.tau_e, 'optimizer': opt_fn_b})
 critic_b = Critic(ag_b, params={'input_layers': [pc_b], 'NeuralNetworkModule': critic_base,
@@ -239,13 +240,19 @@ critic_b = Critic(ag_b, params={'input_layers': [pc_b], 'NeuralNetworkModule': c
 
 # Before learning
 print('\nRecording BEFORE learning (Baseline)...')
-base_acts_before = record_activations(critic_base, {'relu': baseline_relu}, env_b, ag_b, pc_b)
-print(f'Recorded {len(base_acts_before["relu"])} locations')
+base_acts_before = record_activations(critic_base, {'relu1': baseline_relu1, 'relu2': baseline_relu2},
+                                       env_b, ag_b, pc_b)
+print(f'Recorded {len(base_acts_before["relu1"])} locations')
 
-base_relu_before = compute_per_unit(base_acts_before['relu'], PRE_FTA_DIM)
-save_heatmaps_pdf(base_relu_before, PRE_FTA_DIM, env_b, cfg_base,
-    os.path.join(OUT_DIR, 'baseline_relu_before.pdf'),
-    lambda i, n: f'ReLU unit {i+1}/{n}')
+base_relu1_before = compute_per_unit(base_acts_before['relu1'], PRE_FTA_DIM)
+save_heatmaps_pdf(base_relu1_before, PRE_FTA_DIM, env_b, cfg_base,
+    os.path.join(OUT_DIR, 'baseline_relu1_before.pdf'),
+    lambda i, n: f'ReLU1 unit {i+1}/{n}')
+
+base_relu2_before = compute_per_unit(base_acts_before['relu2'], PRE_FTA_DIM)
+save_heatmaps_pdf(base_relu2_before, PRE_FTA_DIM, env_b, cfg_base,
+    os.path.join(OUT_DIR, 'baseline_relu2_before.pdf'),
+    lambda i, n: f'ReLU2 unit {i+1}/{n}')
 
 # Train
 print('\nTraining (Baseline)...')
@@ -261,11 +268,17 @@ except KeyboardInterrupt:
 
 # After learning
 print('\nRecording AFTER learning (Baseline)...')
-base_acts_after = record_activations(critic_base, {'relu': baseline_relu}, env_b, ag_b, pc_b)
+base_acts_after = record_activations(critic_base, {'relu1': baseline_relu1, 'relu2': baseline_relu2},
+                                      env_b, ag_b, pc_b)
 
-base_relu_after = compute_per_unit(base_acts_after['relu'], PRE_FTA_DIM)
-save_heatmaps_pdf(base_relu_after, PRE_FTA_DIM, env_b, cfg_base,
-    os.path.join(OUT_DIR, 'baseline_relu_after.pdf'),
-    lambda i, n: f'ReLU unit {i+1}/{n}')
+base_relu1_after = compute_per_unit(base_acts_after['relu1'], PRE_FTA_DIM)
+save_heatmaps_pdf(base_relu1_after, PRE_FTA_DIM, env_b, cfg_base,
+    os.path.join(OUT_DIR, 'baseline_relu1_after.pdf'),
+    lambda i, n: f'ReLU1 unit {i+1}/{n}')
 
-print('\nDone! Generated 6 PDFs.')
+base_relu2_after = compute_per_unit(base_acts_after['relu2'], PRE_FTA_DIM)
+save_heatmaps_pdf(base_relu2_after, PRE_FTA_DIM, env_b, cfg_base,
+    os.path.join(OUT_DIR, 'baseline_relu2_after.pdf'),
+    lambda i, n: f'ReLU2 unit {i+1}/{n}')
+
+print('\nDone! Generated 8 PDFs.')
