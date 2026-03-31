@@ -94,6 +94,39 @@ class ActivationRecorder:
     @property
     def names(self) -> list[str]:
         return list(self._stores.keys())
+    
+
+
+class ActivationRecorderTimestep:
+    """
+    Records activations per timestep (NOT grouped by state).
+
+    Output format:
+        data[name] = [array_t0, array_t1, ..., array_tT]
+    """
+
+    def __init__(self):
+        self.data = {}
+        self.handles = {}
+
+    def attach(self, module, name):
+        if name in self.handles:
+            raise ValueError(f"{name} already attached")
+
+        self.data[name] = []
+
+        def hook(mod, inputs, output):
+            self.data[name].append(output.detach().cpu().numpy())
+
+        self.handles[name] = module.register_forward_hook(hook)
+
+    def get(self, name):
+        return self.data[name]
+
+    def detach_all(self):
+        for h in self.handles.values():
+            h.remove()
+        self.handles.clear()
 
 
 # ---------------------------------------------------------------------------
