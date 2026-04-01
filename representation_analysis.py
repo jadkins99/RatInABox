@@ -25,7 +25,7 @@ def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
     return np.array(dead_percent)
 
 
-def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
+def compute_dead_neurons_per_timestep(bins, thres=0.1):
     """
     Computes the mean and standard error of dead neurons per timestep across runs.
 
@@ -35,7 +35,7 @@ def compute_dead_neurons_per_timestep(runs_out_arrays, thres=0.1):
     """
     # Flatten episodes per run
     flattened_runs = []
-    for run in runs_out_arrays:
+    for run in bins:
         run_timesteps = []
         for ep_out in run:
             run_timesteps.extend(ep_out)
@@ -292,7 +292,7 @@ def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer, obsta
     return rate_maps, occupancy_map
 
 
-def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles = None):
+def compute_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles = None):
     """
     Compute rate map for a single set of states and out_arrays (e.g. one run).
 
@@ -324,13 +324,13 @@ def compute_fta_rate_map_single(states, out_arrays, n_bins=15, filter_size=None,
     return rate_maps, occupancy_map
 
 
-def compute_fta_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles=None):
+def compute_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles=None):
     """
     Compute average rate map across all runs.
 
     Args:
         runs_states:     list[runs][episodes][timesteps] of agent (x,y) positions
-        runs_out_arrays: list[runs][episodes][timesteps] of FTA output vectors
+        runs_out_arrays: list[runs][episodes][timesteps] of layer output vectors
         n_bins:          number of spatial bins in x- and y-dimensions
         filter_size:     sigma size (bin number) for gaussian smoothing (None = no smoothing)
         buffer:          buffer size for rounding binned position data

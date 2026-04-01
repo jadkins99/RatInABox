@@ -34,6 +34,7 @@ class BaseActorCritic(NeuralNetworkNeurons):
             params = {}
         self.params = __class__.default_params.copy()
         self.params.update(params)
+
         super().__init__(Agent, self.params)
         self.initialise_traces()
         self.firingrate = self.get_state(save_torch=True)

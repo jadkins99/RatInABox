@@ -182,9 +182,9 @@ def plot_occupancy_map(occupancy_map, save_dir=None, filename = None):
     return fig, ax
 
 
-def plot_fta_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None):
+def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None):
     """
-    Plot the rate map for each FTA unit.
+    Plot the rate map for each unit.
     Unvisited bins (NaN) are set to the minimum visited value.
 
     Args:
@@ -233,9 +233,9 @@ def plot_fta_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filen
 
     return fig, axes
 
-def plot_fta_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="fta_rate_map_avg_units.png"):
+def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="fta_rate_map_avg_units.png"):
     """
-    Plot a single rate map averaging activation across all FTA units.
+    Plot a single rate map averaging activation across all units.
 
     Args:
         rate_maps: np.array of shape (n_units, n_bins, n_bins)

@@ -14,7 +14,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from fta import FTA
 
 
 class ActivationRecorder:
@@ -103,17 +102,13 @@ class ActivationRecorder:
 
 def find_layer_module(net: torch.nn.Module, layer_name: str):
     '''Find layer in a network and print the type of each module as it searches'''
-    layer_class = None
-    
-    if layer_name == 'FTA':
-        layer_class = FTA
-    elif layer_name == 'ReLU':
-        layer_class = torch.nn.ReLU
+
+    print(f"Searching for {layer_name} layer in the network...")
 
     for m in net.modules():
-        if isinstance(m, layer_class):
+        if isinstance(m, layer_name):
             return m
-    raise ValueError(f"No {layer_class.__name__} module found in the network.")
+    raise ValueError(f"No {layer_name.__name__} module found in the network.")
     
 
 def find_penultimate_layer(net: nn.Module) -> nn.Module:
