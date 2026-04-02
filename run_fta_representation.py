@@ -29,7 +29,7 @@ from activation_recorder import find_layer_module
 from viz import plot_sparsity_map, display_reward_patch
 from networks import Backbone, VxVyGaussianHead
 from plotting import plot_average_units_rate_map, plot_bin_counts_per_percentage, plot_dead_neurons_over_time, plot_bin_counts_per_percentage, plot_occupancy_map, plot_rate_maps, plot_units_rate_maps
-from representation_analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_rate_map_single, compute_dead_neurons_per_timestep_single, compute_bin_counts_per_timestep_single
+from representation_analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_dead_neurons_per_timestep_single, compute_bin_counts_per_timestep_single, compute_rate_maps_single
 from utils import save_data
 
 
@@ -218,18 +218,18 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, layer_name,f"env_{env_shape}", f"seed_{args.seed}"))
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
-    rate_maps, occupancy = compute_rate_map_single(all_episodes_state, all_out_arrays, n_bins=n_bins, filter_size=1.5)
-    plot_units_rate_maps(rate_maps, n_cols=n_bins, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_seed_{args.seed}.png")
+    rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5)
+    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_seed_{args.seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
 
-    print(f"Computing and plotting obstacle rate maps...")
-    rate_maps_obs, occupancy_obs = compute_rate_map_single(all_episodes_state, all_out_arrays, n_bins=n_bins, filter_size=1.5, obstacles=OBSTACLES[env_shape])
-    plot_units_rate_maps(rate_maps_obs, n_cols=n_bins, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_obs_seed_{args.seed}.png")
-    plot_occupancy_map(occupancy_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_obs_seed_{args.seed}.png")
+    # print(f"Computing and plotting obstacle rate maps...")
+    # rate_maps_obs, occupancy_obs = compute_rate_map_single(all_episodes_state, all_out_arrays, n_bins=n_bins, filter_size=1.5, obstacles=OBSTACLES[env_shape])
+    # plot_units_rate_maps(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_obs_seed_{args.seed}.png")
+    # plot_occupancy_map(occupancy_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_obs_seed_{args.seed}.png")
 
     print(f"Plotting average unit rate maps...")
     plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_seed_{args.seed}.png")
-    plot_average_units_rate_map(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_obs_seed_{args.seed}.png")
+    # plot_average_units_rate_map(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_obs_seed_{args.seed}.png")
 
     #Dead neurons
     print(f"Computing and plotting dead neurons over time and bin counts...")

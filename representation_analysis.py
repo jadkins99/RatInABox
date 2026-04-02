@@ -221,107 +221,54 @@ def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
 
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
-def _compute_single_rate_map(position, trace, n_bins, filter_size, buffer, obstacles=None):
+def compute_rate_maps_single(states, out_arrays, n_spatial_bins=15, buffer=1e-5, filter_size=1.5):
     """
-    Helper to compute rate map for a single set of positions and traces.
+    Rate maps for representations.
 
-    Args:
-        position:    np.array of shape (timesteps, 2)
-        trace:       np.array of shape (timesteps, n_units)
-        n_bins:      number of spatial bins
-        filter_size: sigma for gaussian smoothing (None = no smoothing)
-        buffer:      buffer for binning
-        obstacles:   list of dicts with 'x_min', 'x_max', 'y_min', 'y_max' (optional)
-
-    Returns:
-        rate_maps:      np.array of shape (n_units, n_bins, n_bins)
-        occupancy_map:  np.array of shape (n_bins, n_bins)
-        average_events: np.array of shape (n_units,)
+    states:     list[episodes][timesteps] of (x,y)
+    out_arrays: list[episodes][timesteps] of (n_units,)
     """
+
+    # Flatten episodes
+    position = np.array([s for ep in states for s in ep])
+    trace    = np.array([o for ep in out_arrays for o in ep])
 
     len_recording = trace.shape[0]
     n_units = trace.shape[1]
 
-    rate_maps = np.zeros([n_units, n_bins, n_bins])
-    count_map = np.zeros([n_bins, n_bins])
+    rate_maps = np.zeros((n_units, n_spatial_bins, n_spatial_bins))
+    count_map = np.zeros((n_spatial_bins, n_spatial_bins))
 
-    position_binned = (position // ((np.nanmax(position, axis=0) + buffer) / n_bins)).astype(int)
-    position_binned = np.clip(position_binned, 0, n_bins - 1)
+    # Bin positions
+    position_binned = (position // ((np.nanmax(position, axis=0) + buffer) / n_spatial_bins)).astype(int)
+    position_binned = np.clip(position_binned, 0, n_spatial_bins - 1)
 
+    # Accumulate
     for t, (x, y) in enumerate(position_binned):
-        rate_maps[:, x, y] += trace[t, :]
+        rate_maps[:, x, y] += trace[t]
         count_map[x, y] += 1
 
-    # Keep original count_map before smoothing
-    count_map_raw = count_map.copy()
+    # Correct mask (FIXED)
+    nan_map = np.full_like(count_map, np.nan)
+    nan_map[count_map > 0] = 1.0
 
-    # NaN mask from raw count_map — reflects truly visited bins
-    nan_map = np.zeros_like(count_map_raw) * np.nan
-    nan_map[np.where(count_map_raw)[0], np.where(count_map_raw)[1]] = 1.0
+    # Normalize BEFORE smoothing
+    for u in range(n_units):
+        rate_maps[u] = rate_maps[u] / np.where(count_map > 0, count_map, 1)
 
-    # Explicitly mask obstacle bins in nan_map
-    if obstacles is not None and len(obstacles) > 0:
-        bin_edges = np.linspace(0, 1, n_bins + 1)
-        for obs in obstacles:
-            for ix in range(n_bins):
-                for iy in range(n_bins):
-                    bin_x_min = bin_edges[ix]
-                    bin_x_max = bin_edges[ix + 1]
-                    bin_y_min = bin_edges[iy]
-                    bin_y_max = bin_edges[iy + 1]
-                    if (bin_x_min <= obs['x_max'] and bin_x_max >= obs['x_min'] and
-                        bin_y_min <= obs['y_max'] and bin_y_max >= obs['y_min']):
-                        nan_map[ix, iy] = np.nan
+    # Smooth
+    if filter_size:
+        rate_maps = gaussian_filter1d(rate_maps, sigma=filter_size, axis=1)
+        rate_maps = gaussian_filter1d(rate_maps, sigma=filter_size, axis=2)
 
-    # Normalize BEFORE smoothing using raw count_map
-    for unit in range(n_units):
-        rate_maps[unit] = rate_maps[unit] / np.where(count_map_raw > 0, count_map_raw, 1)
+    # Apply mask AFTER smoothing
+    for u in range(n_units):
+        rate_maps[u] *= nan_map
 
-    if filter_size is not None:
-        rate_maps = gaussian_filter1d(gaussian_filter1d(rate_maps, sigma=filter_size, axis=1),
-                                      sigma=filter_size, axis=2)
-        count_map = gaussian_filter1d(gaussian_filter1d(count_map, sigma=filter_size, axis=0),
-                                      sigma=filter_size, axis=1)
-
-    # Apply nan_map AFTER smoothing to mask obstacle/unvisited bins
-    for unit in range(n_units):
-        rate_maps[unit] = rate_maps[unit] * nan_map
-
-    occupancy_map  = count_map_raw / len_recording
+    occupancy_map = count_map / len_recording
 
     return rate_maps, occupancy_map
 
-
-def compute_rate_map_single(states, out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles = None):
-    """
-    Compute rate map for a single set of states and out_arrays (e.g. one run).
-
-    Args:
-        states:      list[episodes][timesteps] of agent (x,y) positions
-        out_arrays:  list[episodes][timesteps] of FTA output vectors
-        n_bins:      number of spatial bins in x- and y-dimensions
-        filter_size: sigma size (bin number) for gaussian smoothing (None = no smoothing)
-        buffer:      buffer size for rounding binned position data
-
-    Returns:
-        rate_maps:      np.array of shape (n_units, n_bins, n_bins)
-        occupancy_map:  np.array of shape (n_bins, n_bins)
-        average_events: np.array of shape (n_units,)
-    """
-    all_positions = []
-    all_outputs   = []
-    for ep_s, ep_o in zip(states, out_arrays):
-        all_positions.extend(ep_s)
-        all_outputs.extend(ep_o)
-
-    position = np.array(all_positions)
-    trace    = np.array(all_outputs)
-
-    rate_maps, occupancy_map = _compute_single_rate_map(
-        position, trace, n_bins, filter_size, buffer, obstacles
-    )
-
-    return rate_maps, occupancy_map
 
 
 def compute_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles=None):
