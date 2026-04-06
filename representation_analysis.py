@@ -184,14 +184,13 @@ def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
     Compute bin activation counts (> threshold) for each timestep for a single run.
 
     Args:
-        out_arrays: list[episodes][timesteps] of FTA output arrays
-                    Each timestep is expected to have shape (num_outputs, num_bins)
-        num_bins:   number of bins (dimension of each output vector)
+        out_arrays: list[episodes][timesteps] of flattened FTA outputs
+                    Each timestep: shape (num_outputs * num_bins,)
+        num_bins:   number of bins per feature (IMPORTANT: use actual FTA num_tiles)
         threshold:  threshold above which a feature is considered active
 
     Returns:
         bin_counts: np.array of shape (timesteps, num_bins)
-                    Each row contains counts per bin across outputs
     """
 
     # Flatten episodes into a single sequence of timesteps
@@ -202,20 +201,26 @@ def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
     all_counts = []
 
     for timestep_values in all_timesteps:
-        # Convert to array: shape (num_outputs, num_bins)
         arr = np.array(timestep_values)
 
-        # Optional sanity check (can remove later if confident)
-        if arr.ndim != 2 or arr.shape[1] != num_bins:
-            raise ValueError(
-                f"Expected shape (num_outputs, {num_bins}), got {arr.shape}"
-            )
+        # ---- reconstruct bins ----
+        if arr.ndim == 1:
+            if arr.size % num_bins != 0:
+                raise ValueError(
+                    f"Cannot reshape array of size {arr.size} into (-1, {num_bins})"
+                )
+            arr = arr.reshape(-1, num_bins)  # (num_outputs, num_bins)
 
-        # Apply threshold to determine active bins
+        elif arr.ndim == 2:
+            # already structured → do nothing
+            pass
+
+        else:
+            raise ValueError(f"Unexpected array shape: {arr.shape}")
+
+        # ---- compute active bins ----
         active = arr > threshold
-
-        # Sum across outputs → counts per bin
-        bin_counts = np.sum(active, axis=0)
+        bin_counts = np.sum(active, axis=0)  # sum across outputs
 
         all_counts.append(bin_counts)
 
@@ -270,38 +275,6 @@ def compute_rate_maps_single(states, out_arrays, n_spatial_bins=15, buffer=1e-5,
     return rate_maps, occupancy_map
 
 
-
-def compute_rate_maps_average(runs_states, runs_out_arrays, n_bins=15, filter_size=None, buffer=1e-5, obstacles=None):
-    """
-    Compute average rate map across all runs.
-
-    Args:
-        runs_states:     list[runs][episodes][timesteps] of agent (x,y) positions
-        runs_out_arrays: list[runs][episodes][timesteps] of layer output vectors
-        n_bins:          number of spatial bins in x- and y-dimensions
-        filter_size:     sigma size (bin number) for gaussian smoothing (None = no smoothing)
-        buffer:          buffer size for rounding binned position data
-
-    Returns:
-        rate_maps_avg:  np.array of shape (n_units, n_bins, n_bins)
-        occupancy_map:  np.array of shape (n_bins, n_bins)
-        average_events: np.array of shape (n_units,)
-    """
-    all_positions = []
-    all_outputs   = []
-    for run_s, run_o in zip(runs_states, runs_out_arrays):
-        for ep_s, ep_o in zip(run_s, run_o):
-            all_positions.extend(ep_s)
-            all_outputs.extend(ep_o)
-
-    position = np.array(all_positions)
-    trace    = np.array(all_outputs)
-
-    rate_maps_avg, occupancy_map = _compute_single_rate_map(
-        position, trace, n_bins, filter_size, buffer, obstacles
-    )
-
-    return rate_maps_avg, occupancy_map
 
 def get_active_bins_from_run_bins(run_bins, threshold=0.99):
     """

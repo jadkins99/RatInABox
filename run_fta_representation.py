@@ -100,19 +100,17 @@ def set_seed(seed):
 
     torch.use_deterministic_algorithms(True)
 
-def create_hook(ag, env, bins, thres=0.1):
+def create_hook(ag, env, thres=0.1):
     """
     Creates a forward hook that records:
     - agent position
     - timestep
-    - raw FTA output
-    - binned FTA output
+    - raw output
     """
 
     states = []
     time_steps = []
     out_arrays = []
-    fta_bins = []
 
 
     def hook_fn(module, inputs, output):
@@ -123,17 +121,13 @@ def create_hook(ag, env, bins, thres=0.1):
         # preserve structure if multi-dim
         out_flat = out_arr.reshape(-1)
 
-        # split into bins (feature groups)
-        num_groups = out_flat.size // bins if bins > 0 else 1
-        grouped = np.array_split(out_flat, num_groups)
-
         # ---- record ----
         states.append(np.copy(ag.pos))
         time_steps.append(env.t)
         out_arrays.append(out_flat)
-        fta_bins.append(grouped)
+        
 
-    return hook_fn, states, time_steps, fta_bins, out_arrays
+    return hook_fn, states, time_steps, out_arrays
 
 
 def run_multiple_episodes(
@@ -157,7 +151,6 @@ def run_multiple_episodes(
     
     all_episode_time = []
     all_episodes_state = []
-    all_episode_bins = []
     all_out_arrays = []
 
     try: 
@@ -166,7 +159,7 @@ def run_multiple_episodes(
             env.reset()
 
             # Create new FTA hook for this episode
-            hook_fn, states, time_steps, bins, out_arrays = create_hook(ag, env, bins=num_bins)
+            hook_fn, states, time_steps, out_arrays = create_hook(ag, env)
             handle = layer.register_forward_hook(hook_fn)
 
             
@@ -180,10 +173,8 @@ def run_multiple_episodes(
             
             all_episode_time.append(time_steps)
             all_episodes_state.append(states)
-            all_episode_bins.append(bins)
             all_out_arrays.append(out_arrays)
 
-            
             success_frac = np.mean(np.array(env.episodes['meta_info'][-100:]) == "completed")
             episode_time = np.mean(env.episodes['duration'][-100:])
             pbar.set_description(f"<success fraction>: {success_frac:.2f}, <episode time> {episode_time:.1f}")
@@ -194,7 +185,7 @@ def run_multiple_episodes(
         print("Interrupted by user")
 
     
-    return all_episode_time, all_episodes_state, all_episode_bins, all_out_arrays
+    return all_episode_time, all_episodes_state, all_out_arrays
 
 def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, env_shape="empty"):
 
@@ -206,12 +197,11 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     print(f"Plotting initial rate maps...")
     plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, layer_name,f"env_{env_shape}", f"seed_{args.seed}"))
     
-    all_episodes_time, all_episodes_state, all_episodes_bins, all_out_arrays = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
+    all_episodes_time, all_episodes_state, all_out_arrays = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
 
     print(f"Experiment completed. Saving data and plotting results...")
     save_data(all_episodes_time, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_time_seed_{args.seed}'))
     save_data(all_episodes_state, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_states_seed_{args.seed}'))
-    save_data(all_episodes_bins, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}",f"seed_{args.seed}", f'all_episodes_bins_seed_{args.seed}'))
     save_data(all_out_arrays, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}",f"seed_{args.seed}", f'all_out_arrays_seed_{args.seed}'))
 
     print(f"Plotting rate maps after experiment...")
@@ -235,8 +225,10 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     print(f"Computing and plotting dead neurons over time and bin counts...")
     dead_neurons = compute_dead_neurons_per_timestep_single(all_out_arrays)
     plot_dead_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
-    bin_count = compute_bin_counts_per_timestep_single(all_episodes_bins, num_bins=n_bins)
-    plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}",f"seed_{args.seed}"))
+
+    if layer_name == "FTA":
+        bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=total_tiles)
+        plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}",f"seed_{args.seed}"))
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -249,7 +241,7 @@ parser.add_argument("--env_shape", type=str, default="empty")
 args = parser.parse_args()
 
 # ══════════════════════════════════════════════════════════════════════════
-# FTA agent
+# FTA - Layer agent
 # ══════════════════════════════════════════════════════════════════════════
 
 print("=" * 60)
@@ -292,7 +284,7 @@ critic_f = Critic(ag_f, params={'n':1,'input_layers': [pc_f], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=N_TILES, env_shape=args.env_shape, experiment_cfg=cfg_fta)
+run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta)
 
 
 
