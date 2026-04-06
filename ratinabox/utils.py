@@ -711,24 +711,24 @@ def save_figure(
             and (save != False)
         ):
             # None is the default for ratinabox.autosave_plots which is the default for many internal functions that call this function
-            print("WARNING: This figure has not been saved.")
-            print(
-                "    • To AUTOMATICALLY save all plots (recommended), set  `ratinabox.autosave_plots = True`"
-            )
-            print(
-                "    • To MANUALLY save plots, call                        `ratinabox.utils.save_figure(figure_object, save_title)."
-            )
-            print("      This warning will not be shown again")
+            # print("WARNING: This figure has not been saved.")
+            # print(
+            #     "    • To AUTOMATICALLY save all plots (recommended), set  `ratinabox.autosave_plots = True`"
+            # )
+            # print(
+            #     "    • To MANUALLY save plots, call                        `ratinabox.utils.save_figure(figure_object, save_title)."
+            # )
+            # print("      This warning will not be shown again")
             ratinabox._save_plot_warnings_on = False
 
         if (ratinabox._stylize_plot_warnings_on) and (
             ratinabox._stylized_plots == False
         ):
-            print(
-                "HINT: You can stylize plots to make them look like repo/paper by calling `ratinabox.stylize_plots()`"
-            )
+            # print(
+            #     "HINT: You can stylize plots to make them look like repo/paper by calling `ratinabox.stylize_plots()`"
+            # )
 
-            print("      This hint will not be shown again")
+            # print("      This hint will not be shown again")
             ratinabox._stylize_plot_warnings_on = False
 
     if save != True:

@@ -56,32 +56,54 @@ N_EPISODES = 5
 
 OBSTACLES = {
     "empty": [],
-    "obstacle_near_goal": [{"x_min": 0.30, "x_max": 0.45, "y_min": 0.30, "y_max": 0.45}],
-    "obstacle_far_goal":  [{"x_min": 0.85, "x_max": 1.0,  "y_min": 0.85, "y_max": 1.0}],
+
+    "obstacle_near_goal": [
+        {"x_min": 0.30, "x_max": 0.45, "y_min": 0.30, "y_max": 0.45}
+    ],
+
+    "obstacle_corners": [
+        # bottom-left
+        {"x_min": 0.0,  "x_max": 0.15, "y_min": 0.0,  "y_max": 0.15},
+
+        # bottom-right
+        {"x_min": 0.85, "x_max": 1.0,  "y_min": 0.0,  "y_max": 0.15},
+
+        # top-left
+        {"x_min": 0.0,  "x_max": 0.15, "y_min": 0.85, "y_max": 1.0},
+
+        # top-right
+        {"x_min": 0.85, "x_max": 1.0,  "y_min": 0.85, "y_max": 1.0},
+    ],
 }
 
 FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
 DATA_DIR = os.path.join(OUT_DIR, 'data')
 
 
-def get_environment(env, shape="obstacle_near_goal"):
-   
-    if shape == "obstacle_near_goal":
-        env.add_wall([[.30, .30], [.30, .45]])
-        env.add_wall([[.30, .45], [.45, .45]])
-        env.add_wall([[.45, .45], [.45, .30]])
-        env.add_wall([[.45, .30], [.30, .30]])
-        resolution = 0.01  # spacing between walls
-        for y in np.arange(0.30, 0.45, resolution):
-            env.add_wall([[.30, y], [.45, y]])
-    elif shape == "obstacle_far_goal":
-        env.add_wall([[0.85, 0.85], [0.85, 1.0]])
-        env.add_wall([[0.85, 1.0], [1.0, 1.0]])
-        env.add_wall([[1.0, 1.0], [1.0, 0.85]])
-        env.add_wall([[1.0, 0.85], [0.85, 0.85]])
-        resolution = 0.01
-        for y in np.arange(0.85, 1.0, resolution):
-            env.add_wall([[0.85, y], [1.0, y]])
+def get_environment(env, shape="empty"):
+    """
+    Adds obstacles to the environment based on OBSTACLES dict.
+    Each obstacle is defined by x_min, x_max, y_min, y_max.
+    """
+
+    obstacles = OBSTACLES.get(shape, [])
+
+    resolution = 0.01  # spacing for filling obstacles
+
+    for obs in obstacles:
+        x_min, x_max = obs["x_min"], obs["x_max"]
+        y_min, y_max = obs["y_min"], obs["y_max"]
+
+        # ---- outer walls (rectangle boundary) ----
+        env.add_wall([[x_min, y_min], [x_min, y_max]])  # left
+        env.add_wall([[x_min, y_max], [x_max, y_max]])  # top
+        env.add_wall([[x_max, y_max], [x_max, y_min]])  # right
+        env.add_wall([[x_max, y_min], [x_min, y_min]])  # bottom
+
+        # ---- fill interior with horizontal lines ----
+        for y in np.arange(y_min, y_max, resolution):
+            env.add_wall([[x_min, y], [x_max, y]])
+
     return env
 
 
@@ -224,7 +246,7 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     #Dead neurons
     print(f"Computing and plotting dead neurons over time and bin counts...")
     dead_neurons = compute_dead_neurons_per_timestep_single(all_out_arrays)
-    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label='%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
+    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label=r'%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
 
     if layer_name == "FTA":
         bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=total_tiles)
