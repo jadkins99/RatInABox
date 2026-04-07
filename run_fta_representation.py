@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 5
+N_EPISODES = 2000
 
 OBSTACLES = {
     "empty": [],
@@ -232,11 +232,11 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
     rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5)
-    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_seed_{args.seed}.png")
+    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"rate_maps_seed_{args.seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
 
     print(f"Plotting average unit rate maps...")
-    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_seed_{args.seed}.png")
+    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"rate_map_avg_units_seed_{args.seed}.png")
 
     #Dead neurons
     print(f"Computing and plotting sparsity over time and bin counts...")
