@@ -65,7 +65,7 @@ def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, 
         fig.savefig(os.path.join(save_dir, "trajectory.png"))
 
 
-def plot_dead_neurons_over_time(
+def plot_neurons_over_time(
     x,
     y,
     x_label,

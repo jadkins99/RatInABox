@@ -28,7 +28,7 @@ from experiments import ExperimentConfig, _make_env_and_agent, _run_single_episo
 from activation_recorder import find_layer_module
 from viz import plot_sparsity_map, display_reward_patch
 from networks import Backbone, VxVyGaussianHead
-from plotting import plot_average_units_rate_map, plot_bin_counts_per_percentage, plot_dead_neurons_over_time, plot_bin_counts_per_percentage, plot_occupancy_map, plot_rate_maps, plot_units_rate_maps
+from plotting import plot_average_units_rate_map, plot_bin_counts_per_percentage, plot_neurons_over_time, plot_bin_counts_per_percentage, plot_occupancy_map, plot_rate_maps, plot_units_rate_maps
 from representation_analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_dead_neurons_per_timestep_single, compute_bin_counts_per_timestep_single, compute_rate_maps_single
 from utils import save_data
 
@@ -246,7 +246,7 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     #Dead neurons
     print(f"Computing and plotting dead neurons over time and bin counts...")
     dead_neurons = compute_dead_neurons_per_timestep_single(all_out_arrays)
-    plot_dead_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label=r'%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
+    plot_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label=r'%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
 
     if layer_name == "FTA":
         bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=total_tiles)

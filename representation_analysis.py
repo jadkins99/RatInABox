@@ -274,7 +274,62 @@ def compute_rate_maps_single(states, out_arrays, n_spatial_bins=15, buffer=1e-5,
 
     return rate_maps, occupancy_map
 
+import numpy as np
 
+def compute_dead_neurons(runs_out_arrays, thres=0.1):
+    """
+    Computes the mean and standard error of neurons that are
+    inactive for the entire episode.
+
+    A neuron is considered "dead" in an episode if it is below
+    threshold at ALL timesteps.
+
+    Args:
+        runs_out_arrays: list[runs][episodes][timesteps][features]
+        thres: threshold below which a feature is considered inactive
+
+    Returns:
+        mean_dead: np.array (episodes,)
+        se_dead:   np.array (episodes,)
+    """
+
+    max_episodes = max(len(run) for run in runs_out_arrays)
+
+    dead_percent_runs = []
+
+    for run in runs_out_arrays:
+        run_episode_values = []
+
+        for ep in range(len(run)):
+            ep_out = np.array(run[ep])  # (timesteps, features)
+
+            # True if neuron is inactive at ALL timesteps
+            dead_neurons = (ep_out < thres).all(axis=0)
+
+            # percentage of dead neurons
+            percent_dead = dead_neurons.mean() * 100
+
+            run_episode_values.append(percent_dead)
+
+        dead_percent_runs.append(run_episode_values)
+
+    mean_dead = []
+    se_dead = []
+
+    for ep in range(max_episodes):
+        ep_values = [run[ep] for run in dead_percent_runs if ep < len(run)]
+        ep_values = np.array(ep_values)
+
+        mean_dead.append(np.mean(ep_values))
+
+        if len(ep_values) > 1:
+            se = np.std(ep_values, ddof=1) / np.sqrt(len(ep_values))
+        else:
+            se = 0.0
+
+        se_dead.append(se)
+
+    return np.array(mean_dead), np.array(se_dead)
 
 def get_active_bins_from_run_bins(run_bins, threshold=0.99):
     """
