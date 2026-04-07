@@ -25,7 +25,7 @@ def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
     return np.array(dead_percent)
 
 
-def compute_dead_neurons_per_timestep(bins, thres=0.1):
+def compute_dead_neurons_per_timestep(out_arrays, thres=0.1):
     """
     Computes the mean and standard error of dead neurons per timestep across runs.
 
@@ -35,7 +35,7 @@ def compute_dead_neurons_per_timestep(bins, thres=0.1):
     """
     # Flatten episodes per run
     flattened_runs = []
-    for run in bins:
+    for run in out_arrays:
         run_timesteps = []
         for ep_out in run:
             run_timesteps.extend(ep_out)
@@ -126,13 +126,13 @@ def compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1):
 def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     """
     Compute bin activation counts (> threshold) for each timestep,
-    averaged across available runs.
+    averaged across runs.
 
     Args:
-        runs_out_arrays: list[runs][episodes][timesteps] of FTA outputs
-                         Each timestep: shape (num_outputs, num_bins)
-        num_bins:        number of bins (dimension of each output vector)
-        threshold:       threshold above which a feature is considered active
+        runs_out_arrays: list[runs][episodes][timesteps] of flattened outputs
+                         Each timestep: shape (n_units,)
+        num_bins:        number of bins per unit (e.g. 11 for FTA)
+        threshold:       threshold above which a feature is active
 
     Returns:
         bin_counts: np.array of shape (timesteps, num_bins)
@@ -146,7 +146,6 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
             run_timesteps.extend(ep)
         flattened_runs.append(run_timesteps)
 
-    # Find maximum number of timesteps across runs
     max_timesteps = max(len(r) for r in flattened_runs)
 
     all_counts = []
@@ -156,27 +155,28 @@ def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
 
         for run in flattened_runs:
             if t < len(run):
-                # shape: (num_outputs, num_bins)
-                arr = np.array(run[t])
+                arr = np.array(run[t])  # shape: (n_units,)
 
-                # Optional sanity check
-                if arr.ndim != 2 or arr.shape[1] != num_bins:
+                # reconstruct bins
+                if arr.ndim != 1 or arr.size % num_bins != 0:
                     raise ValueError(
-                        f"Expected shape (num_outputs, {num_bins}), got {arr.shape}"
+                        f"Cannot reshape array of shape {arr.shape} into (-1, {num_bins})"
                     )
+
+                arr = arr.reshape(-1, num_bins)  # (num_outputs, num_bins)
 
                 # Threshold → active bins
                 active = arr > threshold
 
-                # Sum across outputs → counts per bin
+                # Count active per bin
                 bin_counts = np.sum(active, axis=0)
 
                 timestep_counts.append(bin_counts)
 
-        # Average across runs (only those that have this timestep)
+        # Average across runs
         all_counts.append(np.mean(timestep_counts, axis=0))
 
-    return np.array(all_counts)  # shape: (timesteps, num_bins)
+    return np.array(all_counts)  # (timesteps, num_bins)
 
 
 def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
