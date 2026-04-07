@@ -25,9 +25,9 @@ def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
     return np.array(dead_percent)
 
 
-def compute_dead_neurons_per_timestep(out_arrays, thres=0.1):
+def compute_sparsity_per_timestep(out_arrays, thres=0.1):
     """
-    Computes the mean and standard error of dead neurons per timestep across runs.
+    Computes the mean and standard error of sparsity per timestep across runs.
 
     Returns:
         mean_dead: np.array (timesteps,)
@@ -70,7 +70,7 @@ def compute_dead_neurons_per_timestep(out_arrays, thres=0.1):
     return np.array(mean_dead), np.array(se_dead)
 
 
-def compute_dead_neurons_per_episode(runs_out_arrays, thres=0.1):
+def compute_sparsity_per_episode(runs_out_arrays, thres=0.1):
     """
     Computes the mean and standard error of dead neurons per episode.
 
