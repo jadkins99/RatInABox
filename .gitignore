@@ -21,3 +21,5 @@ community_use_cases.md
 *ENV/
 *data/
 *figures/
+*logs/
+*.sh

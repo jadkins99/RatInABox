@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 5
+N_EPISODES = 1000
 
 OBSTACLES = {
     "empty": [],
@@ -312,11 +312,11 @@ run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# Baseline agent
+# Baseline agent ReLU 20 units
 # ══════════════════════════════════════════════════════════════════════════
 
 print("\n" + "=" * 60)
-print("Baseline agent")
+print("Baseline agent ReLU 20 units")
 print("=" * 60)
 
 set_seed(args.seed)
@@ -336,7 +336,7 @@ print(f'\n{critic_base}')
 
 actor_base_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_base = ExperimentConfig(label='Baseline', n_episodes=N_EPISODES, eta=ETA)
+cfg_base = ExperimentConfig(label='Baseline_ReLU_20_units', n_episodes=N_EPISODES, eta=ETA)
 env_b, ag_b = _make_env_and_agent(cfg_base)
 env_b = get_environment(env_b, shape=args.env_shape)
 pc_b = PlaceCells(ag_b, params={'n': N_PLACE_CELLS})
@@ -352,6 +352,47 @@ critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModu
 print(f"Starting experiment") 
 
 run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=1, experiment_cfg=cfg_base, env_shape=args.env_shape)
+
+# ══════════════════════════════════════════════════════════════════════════
+# Baseline agent ReLU 220 units
+# ══════════════════════════════════════════════════════════════════════════
+
+print("\n" + "=" * 60)
+print("Baseline agent")
+print("=" * 60)
+
+set_seed(args.seed)
+
+baseline_relu2 = nn.ReLU()
+# baseline_relu2 = nn.ReLU()
+
+critic_base = nn.Sequential(
+    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),  # 0
+    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
+    baseline_relu2,                           # 1
+    nn.Linear(220, 1),     # 2
+    # baseline_relu2,                           # 3
+    # nn.Linear(PRE_FTA_DIM, 1),               # 4
+)
+print(f'\n{critic_base}')
+
+actor_base_220_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
+
+cfg_base_220 = ExperimentConfig(label='Baseline_ReLU_220_units', n_episodes=N_EPISODES, eta=ETA)
+env_b_220, ag_b_220 = _make_env_and_agent(cfg_base_220)
+env_b_220 = get_environment(env_b_220, shape=args.env_shape)
+pc_b_220 = PlaceCells(ag_b_220, params={'n': N_PLACE_CELLS})
+
+opt_fn_b_220 = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
+actor_b_220 = Actor(ag_b_220, params={'n':2,'input_layers': [pc_b_220], 'NeuralNetworkModule': actor_base_220_nn,
+                              'tau': cfg_base_220.tau, 'tau_z': cfg_base_220.tau_e, 'optimizer': opt_fn_b_220})
+critic_b_220 = Critic(ag_b_220, params={'n':1,'input_layers': [pc_b_220], 'NeuralNetworkModule': critic_base,
+                                'tau': cfg_base_220.tau, 'tau_z': cfg_base_220.tau_e, 'optimizer': opt_fn_b_220})
+
+
+print(f"Starting experiment") 
+
+run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=1, experiment_cfg=cfg_base_220, env_shape=args.env_shape)
 
 
 print('\nDone!')
