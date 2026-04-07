@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
-def compute_dead_neurons_per_timestep_single(out_arrays, thres=0.1):
+def compute_sparsity_per_timestep_single(out_arrays, thres=0.1):
     """
     Computes the percentage of inactive (dead) features per timestep for a single run.
 

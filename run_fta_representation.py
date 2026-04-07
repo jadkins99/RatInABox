@@ -29,7 +29,7 @@ from activation_recorder import find_layer_module
 from viz import plot_sparsity_map, display_reward_patch
 from networks import Backbone, VxVyGaussianHead
 from plotting import plot_average_units_rate_map, plot_bin_counts_per_percentage, plot_neurons_over_time, plot_bin_counts_per_percentage, plot_occupancy_map, plot_rate_maps, plot_units_rate_maps
-from representation_analysis import compute_dead_neurons_per_timestep, compute_dead_neurons_per_episode,compute_bin_counts_per_timestep, compute_dead_neurons_per_timestep_single, compute_bin_counts_per_timestep_single, compute_rate_maps_single
+from representation_analysis import compute_sparsity_per_timestep_single, compute_bin_counts_per_timestep_single, compute_rate_maps_single
 from utils import save_data
 
 
@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 1000
+N_EPISODES = 5
 
 OBSTACLES = {
     "empty": [],
@@ -212,45 +212,40 @@ def run_multiple_episodes(
 def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, env_shape="empty"):
 
     layer = find_layer_module(critic.NeuralNetworkModule, layer)
-    layer_name = type(layer).__name__
 
-    print(f"Running experiment for layer {layer_name} in env {env_shape} with seed {args.seed}...")
+    model = experiment_cfg.label
+
+    print(f"Running experiment for model {model} in env {env_shape} with seed {args.seed}...")
 
     print(f"Plotting initial rate maps...")
-    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, layer_name,f"env_{env_shape}", f"seed_{args.seed}"))
+    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{args.seed}"))
     
     all_episodes_time, all_episodes_state, all_out_arrays = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
 
     print(f"Experiment completed. Saving data and plotting results...")
-    save_data(all_episodes_time, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_time_seed_{args.seed}'))
-    save_data(all_episodes_state, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_states_seed_{args.seed}'))
-    save_data(all_out_arrays, os.path.join(DATA_DIR,layer_name, f"env_{env_shape}",f"seed_{args.seed}", f'all_out_arrays_seed_{args.seed}'))
+    save_data(all_episodes_time, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_time_seed_{args.seed}'))
+    save_data(all_episodes_state, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_states_seed_{args.seed}'))
+    save_data(all_out_arrays, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{args.seed}", f'all_out_arrays_seed_{args.seed}'))
 
     print(f"Plotting rate maps after experiment...")
-    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, layer_name,f"env_{env_shape}", f"seed_{args.seed}"))
+    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{args.seed}"))
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
     rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5)
-    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_seed_{args.seed}.png")
-    plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
-
-    # print(f"Computing and plotting obstacle rate maps...")
-    # rate_maps_obs, occupancy_obs = compute_rate_map_single(all_episodes_state, all_out_arrays, n_bins=n_bins, filter_size=1.5, obstacles=OBSTACLES[env_shape])
-    # plot_units_rate_maps(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR,layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_obs_seed_{args.seed}.png")
-    # plot_occupancy_map(occupancy_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_obs_seed_{args.seed}.png")
+    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_maps_seed_{args.seed}.png")
+    plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
 
     print(f"Plotting average unit rate maps...")
-    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_seed_{args.seed}.png")
-    # plot_average_units_rate_map(rate_maps_obs, save_dir=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_obs_seed_{args.seed}.png")
+    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"fta_rate_map_avg_units_seed_{args.seed}.png")
 
     #Dead neurons
-    print(f"Computing and plotting dead neurons over time and bin counts...")
-    dead_neurons = compute_dead_neurons_per_timestep_single(all_out_arrays)
-    plot_neurons_over_time(x=np.arange(len(dead_neurons)), y =dead_neurons, x_label='timesteps', y_label=r'%\ dead neurons', save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}", f"seed_{args.seed}", "dead_neurons_per_timestep.png"))
+    print(f"Computing and plotting sparsity over time and bin counts...")
+    sparsity = compute_sparsity_per_timestep_single(all_out_arrays)
+    plot_neurons_over_time(x=np.arange(len(sparsity)), y =sparsity, x_label='timesteps', y_label=r'% sparsity', save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}", "sparsity_per_timestep.png"))
 
-    if layer_name == "FTA":
-        bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=total_tiles)
-        plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, layer_name, f"env_{env_shape}",f"seed_{args.seed}"))
+    
+    bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=n_bins)
+    plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}",f"seed_{args.seed}"))
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -293,7 +288,7 @@ print(f'\n{critic_fta}')
 
 actor_fta_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_fta = ExperimentConfig(label='FTA_representation', n_episodes=N_EPISODES, eta=ETA)
+cfg_fta = ExperimentConfig(label='FTA', n_episodes=N_EPISODES, eta=ETA)
 env_f, ag_f = _make_env_and_agent(cfg_fta)
 env_f = get_environment(env_f, shape=args.env_shape)
 pc_f = PlaceCells(ag_f, params={'n': N_PLACE_CELLS})
@@ -307,8 +302,6 @@ critic_f = Critic(ag_f, params={'n':1,'input_layers': [pc_f], 'NeuralNetworkModu
 print(f"Starting experiment") 
 
 run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta)
-
-
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -336,7 +329,7 @@ print(f'\n{critic_base}')
 
 actor_base_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_base = ExperimentConfig(label='Baseline_ReLU_20_units', n_episodes=N_EPISODES, eta=ETA)
+cfg_base = ExperimentConfig(label='ReLU_20_units', n_episodes=N_EPISODES, eta=ETA)
 env_b, ag_b = _make_env_and_agent(cfg_base)
 env_b = get_environment(env_b, shape=args.env_shape)
 pc_b = PlaceCells(ag_b, params={'n': N_PLACE_CELLS})
@@ -351,14 +344,14 @@ critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=1, experiment_cfg=cfg_base, env_shape=args.env_shape)
+run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU 220 units
 # ══════════════════════════════════════════════════════════════════════════
 
 print("\n" + "=" * 60)
-print("Baseline agent")
+print("Baseline agent ReLU 220 units")
 print("=" * 60)
 
 set_seed(args.seed)
@@ -367,8 +360,8 @@ baseline_relu2 = nn.ReLU()
 # baseline_relu2 = nn.ReLU()
 
 critic_base = nn.Sequential(
-    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),  # 0
-    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
+    nn.Linear(N_PLACE_CELLS, 220),  # 0
+    nn.LayerNorm(220, elementwise_affine=False), # 1: non-adaptive
     baseline_relu2,                           # 1
     nn.Linear(220, 1),     # 2
     # baseline_relu2,                           # 3
@@ -378,7 +371,7 @@ print(f'\n{critic_base}')
 
 actor_base_220_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_base_220 = ExperimentConfig(label='Baseline_ReLU_220_units', n_episodes=N_EPISODES, eta=ETA)
+cfg_base_220 = ExperimentConfig(label='ReLU_220_units', n_episodes=N_EPISODES, eta=ETA)
 env_b_220, ag_b_220 = _make_env_and_agent(cfg_base_220)
 env_b_220 = get_environment(env_b_220, shape=args.env_shape)
 pc_b_220 = PlaceCells(ag_b_220, params={'n': N_PLACE_CELLS})
@@ -392,7 +385,7 @@ critic_b_220 = Critic(ag_b_220, params={'n':1,'input_layers': [pc_b_220], 'Neura
 
 print(f"Starting experiment") 
 
-run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=1, experiment_cfg=cfg_base_220, env_shape=args.env_shape)
+run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape)
 
 
 print('\nDone!')

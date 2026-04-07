@@ -143,7 +143,7 @@ def plot_bin_counts_per_percentage(bin_counts, percentages=[10,30,50,70,90,100],
     for perc, idx in timestep_indices.items():
         plt.figure(figsize=(6,4))
         plt.bar(np.arange(bin_counts.shape[1]), bin_counts[idx])
-        plt.xlabel("FTA Bin")
+        plt.xlabel("Bins")
         plt.ylabel("Active neuron count")
         plt.title(f"Active neurons per bin at {perc}% of training (timestep {idx})")
         ax = plt.gca()
@@ -255,7 +255,6 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
     fig, ax = plt.subplots(figsize=(5, 5))
     im = ax.imshow(rate_map.T, origin='lower', cmap='viridis', vmin=vmin, vmax=vmax)
     plt.colorbar(im, ax=ax, label="Average activation")
-    ax.set_title("FTA Rate Map (average across units)")
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()
