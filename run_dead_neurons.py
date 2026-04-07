@@ -16,7 +16,7 @@ FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--env_shape", type=str, default="empty")
-parser.add_argument("--n_bins", type=int, default=1)
+parser.add_argument("--n_bins", type=int, default=11)
 parser.add_argument("--model", type=str, default="FTA")
 
 args = parser.parse_args()
