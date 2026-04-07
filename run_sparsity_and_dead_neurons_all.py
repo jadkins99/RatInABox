@@ -8,7 +8,7 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(OUT_DIR, 'data')
 FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
 
-os.makedirs(FIGURES_DIR, exist_ok=True)
+# os.makedirs(FIGURES_DIR, exist_ok=True)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Experiment
@@ -61,6 +61,7 @@ plot_multiple_models(
     sparsity_results,
     x_label="episodes",
     y_label="% sparsity",
+    save=True,
     filename=os.path.join(
         FIGURES_DIR,
         f"sparsity_per_episode_all_models_env_{args.env_shape}.png"
@@ -75,6 +76,7 @@ plot_multiple_models(
     dead_results,
     x_label="episodes",
     y_label="% dead neurons",
+    save=True,
     filename=os.path.join(
         FIGURES_DIR,
         f"dead_neurons_all_models_env_{args.env_shape}.png"

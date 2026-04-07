@@ -284,7 +284,7 @@ def plot_multiple_models(
         filename: path to save the figure
     """
 
-    plt.figure(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 4))
 
     for model, (mean, se) in results_dict.items():
         x = np.arange(len(mean))
@@ -293,34 +293,35 @@ def plot_multiple_models(
         se = np.array(se) if se is not None else None
 
         # Main line
-        plt.plot(x, mean, lw=2, label=model)
+        ax.plot(x, mean, lw=2, label=model)
 
         # Standard error shading
         if se is not None:
-            plt.fill_between(
+            ax.fill_between(
                 x,
                 mean - se,
                 mean + se,
                 alpha=0.3
             )
 
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
+    # Labels
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
     # Legend
-    plt.legend()
+    ax.legend()
 
-    # Remove grid
-    plt.grid(False)
-
-    # Remove top and right borders
-    ax = plt.gca()
+    # Style cleanup
+    ax.grid(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
+    # Save if needed
     if save:
         if filename is None:
             raise ValueError("filename must be provided when save=True")
-        plt.savefig(filename, dpi=300, bbox_inches="tight")
 
-    plt.close()
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        fig.savefig(filename, dpi=300, bbox_inches="tight")
+
+    return fig, ax
