@@ -264,3 +264,63 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
         fig.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches="tight")
 
     return fig, ax
+
+
+def plot_multiple_models(
+    results_dict,
+    x_label,
+    y_label,
+    save=False,
+    filename=None
+):
+    """
+    Plot multiple models with mean ± standard error shading.
+
+    Args:
+        results_dict: dict {model_name: (mean, se)}
+        x_label: label for x-axis
+        y_label: label for y-axis
+        save: whether to save the figure
+        filename: path to save the figure
+    """
+
+    plt.figure(figsize=(8, 4))
+
+    for model, (mean, se) in results_dict.items():
+        x = np.arange(len(mean))
+
+        mean = np.array(mean)
+        se = np.array(se) if se is not None else None
+
+        # Main line
+        plt.plot(x, mean, lw=2, label=model)
+
+        # Standard error shading
+        if se is not None:
+            plt.fill_between(
+                x,
+                mean - se,
+                mean + se,
+                alpha=0.3
+            )
+
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+
+    # Legend
+    plt.legend()
+
+    # Remove grid
+    plt.grid(False)
+
+    # Remove top and right borders
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    if save:
+        if filename is None:
+            raise ValueError("filename must be provided when save=True")
+        plt.savefig(filename, dpi=300, bbox_inches="tight")
+
+    plt.close()

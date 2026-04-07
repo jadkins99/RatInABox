@@ -13,14 +13,12 @@ FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
 # Experiment
 # ══════════════════════════════════════════════════════════════════════════
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--env_shape", type=str, default="empty")
 parser.add_argument("--n_bins", type=int, default=11)
 parser.add_argument("--model", type=str, default="FTA")
 
 args = parser.parse_args()
-
 
 runs_out_arrays = load_runs_out_arrays(os.path.join(DATA_DIR, args.model), args.env_shape)
 
