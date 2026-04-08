@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 4
+N_EPISODES = 2000
 
 OBSTACLES = {
     "empty": [],
