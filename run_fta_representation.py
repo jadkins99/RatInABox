@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 2000
+N_EPISODES = 4
 
 OBSTACLES = {
     "empty": [],
@@ -231,7 +231,7 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{args.seed}"))
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
-    rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5)
+    rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5, obstacles=OBSTACLES[env_shape])
     plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"rate_maps_seed_{args.seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
 

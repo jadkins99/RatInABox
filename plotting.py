@@ -182,7 +182,7 @@ def plot_occupancy_map(occupancy_map, save_dir=None, filename = None):
     return fig, ax
 
 
-def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None):
+def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None, vmin=0, vmax=2):
     """
     Plot the rate map for each unit.
     Unvisited bins (NaN) are set to the minimum visited value.
@@ -197,8 +197,8 @@ def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, fil
     n_units = rate_maps.shape[0]
     n_rows  = int(np.ceil(n_units / n_cols))
 
-    vmin = np.nanmin(rate_maps)
-    vmax = np.nanmax(rate_maps)
+    # vmin = np.nanmin(rate_maps)
+    # vmax = np.nanmax(rate_maps)
     if fill_na:
         rate_maps = np.where(np.isnan(rate_maps), vmin, rate_maps)
 
@@ -233,7 +233,7 @@ def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, fil
 
     return fig, axes
 
-def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="fta_rate_map_avg_units.png"):
+def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="rate_map_avg_units.png",vmin=0, vmax=2):
     """
     Plot a single rate map averaging activation across all units.
 
@@ -247,8 +247,8 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
     # Average across units -> shape (n_bins, n_bins)
     rate_map = np.nanmean(rate_maps, axis=0)
 
-    vmin = np.nanmin(rate_map)
-    vmax = np.nanmax(rate_map)
+    # vmin = np.nanmin(rate_map)
+    # vmax = np.nanmax(rate_map)
     if fill_na:
         rate_map = np.where(np.isnan(rate_map), vmin, rate_map)
 
