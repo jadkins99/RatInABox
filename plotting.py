@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ratinabox
 
+def bootstrap_ci(data, n_boot=10000, ci=95):
+    """Bootstrap 95% CI for the mean."""
+    rng = np.random.default_rng(42)
+    boot_means = np.array([
+        np.mean(rng.choice(data, size=len(data), replace=True))
+        for _ in range(n_boot)
+    ])
+    lo = np.percentile(boot_means, (100 - ci) / 2)
+    hi = np.percentile(boot_means, 100 - (100 - ci) / 2)
+    return lo, hi
+
 def display_reward_patch(fig, ax, reward_pos=np.array([0.5, 0.5]), reward_radius=0.1, **kwargs): #we'll also use this later 
     """Plots the reward patch on the given axis"""
     circle = matplotlib.patches.Circle(reward_pos, radius=reward_radius,
@@ -154,10 +165,6 @@ def plot_bin_counts_per_percentage(bin_counts, percentages=[10,30,50,70,90,100],
             plt.savefig(f"{filename}/bin_counts_{perc}percent.png", dpi=300, bbox_inches="tight")
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-
 
 def plot_occupancy_map(
     occupancy_map,
@@ -296,6 +303,11 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
     return fig, ax
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+
 def plot_multiple_models(
     results_dict,
     x_label,
@@ -304,49 +316,63 @@ def plot_multiple_models(
     filename=None
 ):
     """
-    Plot multiple models with mean ± standard error shading.
+    Plot multiple models with bootstrap confidence intervals.
 
-    Args:
-        results_dict: dict {model_name: (mean, se)}
-        x_label: label for x-axis
-        y_label: label for y-axis
-        save: whether to save the figure
-        filename: path to save the figure
+    results_dict:
+        {model_name: list/array of shape (n_points, n_samples_per_point)}
     """
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    for model, (mean, se) in results_dict.items():
-        x = np.arange(len(mean))
+    for model, data in results_dict.items():
 
-        mean = np.array(mean)
-        se = np.array(se) if se is not None else None
+        data = np.asarray(data)  
+        # shape expected: (n_points, n_samples)
 
-        # Main line
-        ax.plot(x, mean, lw=2, label=model)
+        x = np.arange(data.shape[0])
 
-        # Standard error shading
-        if se is not None:
-            ax.fill_between(
-                x,
-                mean - se,
-                mean + se,
-                alpha=0.3
-            )
+        means = []
+        ci_lows = []
+        ci_highs = []
 
-    # Labels
+        for i in range(data.shape[0]):
+            vals = data[i]
+
+            m = np.mean(vals)
+            lo, hi = bootstrap_ci(vals)
+
+            means.append(m)
+            ci_lows.append(lo)
+            ci_highs.append(hi)
+
+        means = np.array(means)
+        ci_lows = np.array(ci_lows)
+        ci_highs = np.array(ci_highs)
+
+        # main line
+        ax.plot(x, means, lw=2, label=model)
+
+        # CI shading
+        ax.fill_between(
+            x,
+            ci_lows,
+            ci_highs,
+            alpha=0.3
+        )
+
+    # labels
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
-    # Legend
+    # legend
     ax.legend()
 
-    # Style cleanup
+    # style cleanup
     ax.grid(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # Save if needed
+    # save
     if save:
         if filename is None:
             raise ValueError("filename must be provided when save=True")
