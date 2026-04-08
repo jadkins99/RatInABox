@@ -245,7 +245,7 @@ def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, 
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_occupancy_seed_{seed}.png")
 
     print(f"Plotting average unit rate maps...")
-    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model.lower(), f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_rate_map_avg_units_seed_{seed}_env_{env_shape}.png")
+    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_rate_map_avg_units_seed_{seed}_env_{env_shape}.png")
 
     #Dead neurons
     print(f"Computing and plotting sparsity over time and bin counts...")
