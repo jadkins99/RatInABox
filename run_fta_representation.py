@@ -218,43 +218,43 @@ def run_multiple_episodes(
     
     return all_episode_time, all_episodes_state, all_out_arrays
 
-def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, env_shape="empty"):
+def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, env_shape="empty", seed=0):
 
     layer = find_layer_module(critic.NeuralNetworkModule, layer)
 
     model = experiment_cfg.label
 
-    print(f"Running experiment for model {model} in env {env_shape} with seed {args.seed}...")
+    print(f"Running experiment for model {model} in env {env_shape} with seed {seed}...")
 
     print(f"Plotting initial rate maps...")
-    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{args.seed}"))
+    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{seed}"))
     
     all_episodes_time, all_episodes_state, all_out_arrays = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
 
     print(f"Experiment completed. Saving data and plotting results...")
-    save_data(all_episodes_time, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_time_seed_{args.seed}'))
-    save_data(all_episodes_state, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{args.seed}", f'all_episodes_states_seed_{args.seed}'))
-    save_data(all_out_arrays, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{args.seed}", f'all_out_arrays_seed_{args.seed}'))
+    save_data(all_episodes_time, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{seed}", f'all_episodes_time_seed_{seed}'))
+    save_data(all_episodes_state, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{seed}", f'all_episodes_states_seed_{seed}'))
+    save_data(all_out_arrays, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{seed}", f'all_out_arrays_seed_{seed}'))
 
     print(f"Plotting rate maps after experiment...")
-    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{args.seed}"))
+    plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{seed}"))
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
     rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5, obstacles=OBSTACLES[env_shape])
-    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"rate_maps_seed_{args.seed}.png")
-    plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"occupancy_seed_{args.seed}.png")
+    plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model}_rate_maps_seed_{seed}.png")
+    plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model}_occupancy_seed_{seed}.png")
 
     print(f"Plotting average unit rate maps...")
-    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}"), filename=f"rate_map_avg_units_seed_{args.seed}.png")
+    plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model}_rate_map_avg_units_seed_{seed}_env_{env_shape}.png")
 
     #Dead neurons
     print(f"Computing and plotting sparsity over time and bin counts...")
     sparsity = compute_sparsity_per_timestep_single(all_out_arrays)
-    plot_neurons_over_time(x=np.arange(len(sparsity)), y =sparsity, x_label='timesteps', y_label=r'% sparsity', save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{args.seed}", "sparsity_per_timestep.png"))
+    plot_neurons_over_time(x=np.arange(len(sparsity)), y =sparsity, x_label='timesteps', y_label=r'% sparsity', save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}", "sparsity_per_timestep.png"))
 
     
     bin_count = compute_bin_counts_per_timestep_single(all_out_arrays, num_bins=n_bins)
-    plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}",f"seed_{args.seed}"))
+    plot_bin_counts_per_percentage(bin_count, percentages=[1,2,5,7,10,30,50,70,90,100], save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}",f"seed_{seed}"))
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -310,7 +310,7 @@ critic_f = Critic(ag_f, params={'n':1,'input_layers': [pc_f], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta)
+run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta, seed = args.seed,)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -353,7 +353,7 @@ critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape)
+run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape, seed = args.seed)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU 220 units
@@ -394,7 +394,7 @@ critic_b_220 = Critic(ag_b_220, params={'n':1,'input_layers': [pc_b_220], 'Neura
 
 print(f"Starting experiment") 
 
-run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape)
+run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape, seed = args.seed,)
 
 
 print('\nDone!')
