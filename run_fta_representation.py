@@ -74,6 +74,15 @@ OBSTACLES = {
         # top-right
         {"x_min": 0.85, "x_max": 1.0,  "y_min": 0.85, "y_max": 1.0},
     ],
+
+    # NEW: walls
+    "walls": [
+        # vertical wall: x = 0.40 from y = 0 → 0.60
+        {"x_min": 0.40, "x_max": 0.40, "y_min": 0.0,  "y_max": 0.60},
+
+        # horizontal wall: y = 0.60 from x = 0.40 → 0.80
+        {"x_min": 0.40, "x_max": 0.80, "y_min": 0.60, "y_max": 0.60},
+    ]
 }
 
 FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
