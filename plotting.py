@@ -303,10 +303,6 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
     return fig, ax
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-
 
 def plot_multiple_models(
     results_dict,
@@ -316,63 +312,32 @@ def plot_multiple_models(
     filename=None
 ):
     """
-    Plot multiple models with bootstrap confidence intervals.
-
     results_dict:
-        {model_name: list/array of shape (n_points, n_samples_per_point)}
+        {model_name: (mean, ci_low, ci_high)}
     """
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    for model, data in results_dict.items():
+    for model, (mean, low, high) in results_dict.items():
 
-        data = np.asarray(data)  
-        # shape expected: (n_points, n_samples)
+        mean = np.asarray(mean)
+        low = np.asarray(low)
+        high = np.asarray(high)
 
-        x = np.arange(data.shape[0])
+        x = np.arange(len(mean))
 
-        means = []
-        ci_lows = []
-        ci_highs = []
+        ax.plot(x, mean, lw=2, label=model)
+        ax.fill_between(x, low, high, alpha=0.3)
 
-        for i in range(data.shape[0]):
-            vals = data[i]
-
-            m = np.mean(vals)
-            lo, hi = bootstrap_ci(vals)
-
-            means.append(m)
-            ci_lows.append(lo)
-            ci_highs.append(hi)
-
-        means = np.array(means)
-        ci_lows = np.array(ci_lows)
-        ci_highs = np.array(ci_highs)
-
-        # main line
-        ax.plot(x, means, lw=2, label=model)
-
-        # CI shading
-        ax.fill_between(
-            x,
-            ci_lows,
-            ci_highs,
-            alpha=0.3
-        )
-
-    # labels
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
-    # legend
     ax.legend()
 
-    # style cleanup
     ax.grid(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # save
     if save:
         if filename is None:
             raise ValueError("filename must be provided when save=True")

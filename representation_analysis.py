@@ -1,6 +1,22 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
+def bootstrap_ci(arr, n_boot=2000, alpha=0.05):
+    arr = np.asarray(arr)
+    arr = arr[~np.isnan(arr)]
+
+    if len(arr) == 0:
+        return np.nan, np.nan, np.nan
+
+    boots = np.random.choice(arr, size=(n_boot, len(arr)), replace=True)
+    stats = np.mean(boots, axis=1)
+
+    low = np.percentile(stats, 100 * alpha / 2)
+    high = np.percentile(stats, 100 * (1 - alpha / 2))
+    mean = np.mean(arr)
+
+    return mean, low, high
+
 def compute_sparsity_per_timestep_single(out_arrays, thres=0.1):
     """
     Computes the percentage of inactive (dead) features per timestep for a single run.
@@ -72,56 +88,37 @@ def compute_sparsity_per_timestep(out_arrays, thres=0.1):
 
 def compute_sparsity_per_episode(runs_out_arrays, thres=0.1):
     """
-    Computes the mean and standard error of dead neurons per episode.
-
-    Procedure:
-        1. Compute inactivity per timestep
-        2. Average across timesteps within each episode
-        3. Average across runs (only runs that have that episode)
-
-    Args:
-        runs_out_arrays: list[runs][episodes][timesteps][features]
-        thres: threshold below which a feature is considered inactive
-
     Returns:
-        mean_dead: np.array (episodes,)
-        se_dead:   np.array (episodes,)
+        mean, ci_low, ci_high per episode
     """
 
     max_episodes = max(len(run) for run in runs_out_arrays)
 
-    # Store per-run episode values
-    dead_percent_runs = []
+    # collect per episode across runs
+    per_episode = [[] for _ in range(max_episodes)]
 
     for run in runs_out_arrays:
-        run_episode_values = []
-
         for ep in range(len(run)):
             ep_out = np.array(run[ep])  # (timesteps, features)
+
             inactive = ep_out < thres
             percent_timestep = inactive.mean(axis=1) * 100
             percent_episode = percent_timestep.mean()
-            run_episode_values.append(percent_episode)
 
-        dead_percent_runs.append(run_episode_values)
+            per_episode[ep].append(percent_episode)
 
-    mean_dead = []
-    se_dead = []
+    means, lows, highs = [], [], []
 
-    for ep in range(max_episodes):
-        ep_values = [run[ep] for run in dead_percent_runs if ep < len(run)]
+    for ep_values in per_episode:
         ep_values = np.array(ep_values)
 
-        mean_dead.append(np.mean(ep_values))
+        m, lo, hi = bootstrap_ci(ep_values)
 
-        if len(ep_values) > 1:
-            se = np.std(ep_values, ddof=1) / np.sqrt(len(ep_values))
-        else:
-            se = 0.0
+        means.append(m)
+        lows.append(lo)
+        highs.append(hi)
 
-        se_dead.append(se)
-
-    return np.array(mean_dead), np.array(se_dead)
+    return np.array(means), np.array(lows), np.array(highs)
 
 def compute_bin_counts_per_timestep(runs_out_arrays, num_bins, threshold=0.1):
     """
@@ -326,7 +323,7 @@ def compute_rate_maps_single(
     return rate_maps, occupancy_map
 
 
-def compute_dead_neurons(runs_out_arrays, thres=0.1):
+def compute_dead_neurons_with_se(runs_out_arrays, thres=0.1):
     """
     Computes the mean and standard error of neurons that are
     inactive for the entire episode.
@@ -380,6 +377,38 @@ def compute_dead_neurons(runs_out_arrays, thres=0.1):
         se_dead.append(se)
 
     return np.array(mean_dead), np.array(se_dead)
+
+def compute_dead_neurons(runs_out_arrays, thres=0.1):
+    """
+    Returns:
+        mean, ci_low, ci_high per episode
+    """
+
+    max_episodes = max(len(run) for run in runs_out_arrays)
+
+    per_episode = [[] for _ in range(max_episodes)]
+
+    for run in runs_out_arrays:
+        for ep in range(len(run)):
+            ep_out = np.array(run[ep])  # (timesteps, features)
+
+            dead_neurons = (ep_out < thres).all(axis=0)
+            percent_dead = dead_neurons.mean() * 100
+
+            per_episode[ep].append(percent_dead)
+
+    means, lows, highs = [], [], []
+
+    for ep_values in per_episode:
+        ep_values = np.array(ep_values)
+
+        m, lo, hi = bootstrap_ci(ep_values)
+
+        means.append(m)
+        lows.append(lo)
+        highs.append(hi)
+
+    return np.array(means), np.array(lows), np.array(highs)
 
 def get_active_bins_from_run_bins(run_bins, threshold=0.99):
     """

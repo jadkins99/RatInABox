@@ -8,31 +8,18 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(OUT_DIR, 'data')
 FIGURES_DIR = os.path.join(OUT_DIR, 'figures')
 
-# os.makedirs(FIGURES_DIR, exist_ok=True)
-
-# ══════════════════════════════════════════════════════════════════════════
-# Experiment
-# ══════════════════════════════════════════════════════════════════════════
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--env_shape", type=str, default="empty")
-
 args = parser.parse_args()
 
-models = ["FTA", "ReLU_20_units", "ReLU_220_units"]  
-
-colors = {
-    "FTA": "blue",
-    "ReLU_20_units": "orange",
-    "ReLU_220_units": "green",
-}
+models = ["FTA", "ReLU_20_units", "ReLU_220_units"]
 
 sparsity_results = {}
 dead_results = {}
 
-# ══════════════════════════════════════════════════════════════════════════
-# Compute metrics
-# ══════════════════════════════════════════════════════════════════════════
+# =========================
+# Compute metrics (BOOTSTRAP CI)
+# =========================
 
 for model in models:
     print(f"\nProcessing model: {model}")
@@ -42,20 +29,28 @@ for model in models:
         args.env_shape
     )
 
-    # Sparsity per timestep
-    sp_mean, sp_se = compute_sparsity_per_episode(
+    # -------------------------
+    # Sparsity (bootstrap CI)
+    # -------------------------
+    sp_mean, sp_low, sp_high = compute_sparsity_per_episode(
         runs_out_arrays, thres=0.1
     )
-    sparsity_results[model] = (sp_mean, sp_se)
 
-    # Dead neurons per episode
-    dn_mean, dn_se = compute_dead_neurons(runs_out_arrays)
-    dead_results[model] = (dn_mean, dn_se)
+    sparsity_results[model] = (sp_mean, sp_low, sp_high)
+
+    # -------------------------
+    # Dead neurons (bootstrap CI)
+    # -------------------------
+    dn_mean, dn_low, dn_high = compute_dead_neurons(
+        runs_out_arrays
+    )
+
+    dead_results[model] = (dn_mean, dn_low, dn_high)
 
 
-# ══════════════════════════════════════════════════════════════════════════
+# =========================
 # Plot: Sparsity
-# ══════════════════════════════════════════════════════════════════════════
+# =========================
 
 plot_multiple_models(
     sparsity_results,
@@ -68,9 +63,9 @@ plot_multiple_models(
     )
 )
 
-# ══════════════════════════════════════════════════════════════════════════
+# =========================
 # Plot: Dead neurons
-# ══════════════════════════════════════════════════════════════════════════
+# =========================
 
 plot_multiple_models(
     dead_results,
