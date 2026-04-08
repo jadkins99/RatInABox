@@ -154,7 +154,18 @@ def plot_bin_counts_per_percentage(bin_counts, percentages=[10,30,50,70,90,100],
             plt.savefig(f"{filename}/bin_counts_{perc}percent.png", dpi=300, bbox_inches="tight")
 
 
-def plot_occupancy_map(occupancy_map, save_dir=None, filename = None):
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+
+def plot_occupancy_map(
+    occupancy_map,
+    save_dir=None,
+    filename=None,
+    vmin=0,   
+    vmax=2    
+):
     """
     Plot the occupancy map (proportion of time spent in each bin).
     Unvisited bins are set to the minimum visited value.
@@ -162,14 +173,29 @@ def plot_occupancy_map(occupancy_map, save_dir=None, filename = None):
     Args:
         occupancy_map: np.array of shape (n_bins, n_bins)
         save_dir:      directory to save the plot (optional)
+        filename:      file name for saving (optional)
+        vmin:          minimum value for color scale (optional)
+        vmax:          maximum value for color scale (optional)
     """
 
+    # Fill NaNs with minimum visited value (for visualization only)
     min_val = np.nanmin(occupancy_map)
     occupancy_filled = np.where(np.isnan(occupancy_map), min_val, occupancy_map)
 
+    # If vmin/vmax not provided, default to data range
+
     fig, ax = plt.subplots(figsize=(5, 5))
-    im = ax.imshow(occupancy_filled.T, origin='lower', cmap='gray_r', vmin=min_val)
+
+    im = ax.imshow(
+        occupancy_filled.T,
+        origin='lower',
+        cmap='gray_r',
+        vmin=vmin,
+        vmax=vmax
+    )
+
     plt.colorbar(im, ax=ax, label="Proportion of time")
+
     ax.set_title("Occupancy Map")
     ax.set_xticks([])
     ax.set_yticks([])
@@ -177,12 +203,16 @@ def plot_occupancy_map(occupancy_map, save_dir=None, filename = None):
 
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
-        fig.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches="tight")
+        fig.savefig(
+            os.path.join(save_dir, filename),
+            dpi=300,
+            bbox_inches="tight"
+        )
 
     return fig, ax
 
 
-def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None, vmin=0, vmax=2):
+def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None, vmin=0, vmax=3):
     """
     Plot the rate map for each unit.
     Unvisited bins (NaN) are set to the minimum visited value.
@@ -233,7 +263,7 @@ def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, fil
 
     return fig, axes
 
-def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="rate_map_avg_units.png",vmin=0, vmax=2):
+def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filename="rate_map_avg_units.png",vmin=0, vmax=3):
     """
     Plot a single rate map averaging activation across all units.
 
