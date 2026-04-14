@@ -332,14 +332,10 @@ def plot_multiple_models(
     results_dict,
     x_label,
     y_label,
+    model_colors=MODEL_COLORS,
     save=False,
     filename=None
 ):
-    """
-    results_dict:
-        {model_name: (mean, ci_low, ci_high)}
-    """
-
     fig, ax = plt.subplots(figsize=(8, 4))
 
     for model, (mean, low, high) in results_dict.items():
@@ -350,8 +346,10 @@ def plot_multiple_models(
 
         x = np.arange(len(mean))
 
-        ax.plot(x, mean, lw=2, label=model)
-        ax.fill_between(x, low, high, alpha=0.5)
+        color = model_colors.get(model, None) if model_colors else None
+
+        ax.plot(x, mean, lw=2, label=model, color=color)
+        ax.fill_between(x, low, high, alpha=0.3, color=color)
 
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -359,8 +357,8 @@ def plot_multiple_models(
     ax.legend()
 
     ax.grid(False)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     if save:
         if filename is None:
@@ -371,7 +369,6 @@ def plot_multiple_models(
         plt.close(fig)
 
     return fig, ax
-
 
 
 def plot_peaks_per_environment(peaks_by_env, save_dir="figures", model_colors=MODEL_COLORS):
