@@ -69,3 +69,45 @@ def load_runs_out_arrays(data_dir, env_shape):
         runs_out_arrays.append(data)
 
     return runs_out_arrays
+
+
+def load_rate_maps(root="data"):
+    data = {}
+
+    for model in os.listdir(root):
+        model_path = os.path.join(root, model)
+        if not os.path.isdir(model_path):
+            continue
+
+        data[model] = {}
+
+        for env in os.listdir(model_path):
+            env_path = os.path.join(model_path, env)
+            if not os.path.isdir(env_path):
+                continue
+
+            runs = []
+
+            for seed in os.listdir(env_path):
+                seed_path = os.path.join(env_path, seed)
+                if not os.path.isdir(seed_path):
+                    continue
+
+                # 🔥 find the file dynamically
+                rate_map_file = None
+                for f in os.listdir(seed_path):
+                    if f.startswith("rate_maps_units_seed"):
+                        rate_map_file = os.path.join(seed_path, f)
+                        break
+
+                if rate_map_file is None:
+                    continue
+
+                with open(rate_map_file, "rb") as f:
+                    rate_maps = pickle.load(f)
+
+                runs.append(rate_maps)
+
+            data[model][env] = runs
+
+    return data

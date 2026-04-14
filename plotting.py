@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ratinabox
 
+MODEL_COLORS = {
+    "FTA": "#1f77b4",        # blue
+    "ReLU_20_units": "#ffe30e",    # orange
+    "ReLU_220_units": "#2ca02c",   # green
+    "ReLU_FTA": "#d62728",  # red
+    "Double_ReLU_220_units": "#9467bd" # purple
+}
+
 def bootstrap_ci(data, n_boot=10000, ci=95):
     """Bootstrap 95% CI for the mean."""
     rng = np.random.default_rng(42)
@@ -363,3 +371,75 @@ def plot_multiple_models(
         plt.close(fig)
 
     return fig, ax
+
+
+
+def plot_peaks_per_environment(peaks_by_env, save_dir="figures", model_colors=MODEL_COLORS):
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    # =========================
+    # global y-axis scaling
+    # =========================
+    all_values = []
+    for env_dict in peaks_by_env.values():
+        for arr in env_dict.values():
+            all_values.extend(arr)
+
+    all_values = np.array(all_values)
+    y_min = np.nanmin(all_values)
+    y_max = np.nanmax(all_values)
+
+    padding = 0.05 * (y_max - y_min)
+    y_min -= padding
+    y_max += padding
+
+    # =========================
+    # per environment plot
+    # =========================
+    for env, model_dict in peaks_by_env.items():
+
+        plt.figure(figsize=(6, 4))
+
+        models = sorted(model_dict.keys())
+        values = [model_dict[m] for m in models]
+
+        positions = np.arange(len(models))
+
+        # fallback if no colors provided
+        if model_colors is None:
+            model_colors = {}
+
+        colors = [model_colors.get(m, "gray") for m in models]
+
+        box = plt.boxplot(values, positions=positions, patch_artist=True)
+
+        # color boxes
+        for patch, color in zip(box["boxes"], colors):
+            patch.set_facecolor(color)
+
+        # remove x-axis labels (legend instead)
+        plt.xticks([])
+
+        # legend (consistent colors!)
+        for m in models:
+            plt.plot([], [], color=model_colors.get(m, "gray"), label=m)
+
+        plt.legend(frameon=False)
+
+        # styling
+        plt.title(f"Peak activations — {env}")
+        plt.ylabel("Peak activation")
+        plt.ylim(y_min, y_max)
+
+        ax = plt.gca()
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+        plt.tight_layout()
+
+        filename = os.path.join(save_dir, f"peak_activations_{env}.png")
+        plt.savefig(filename, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"Saved: {filename}")

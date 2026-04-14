@@ -474,3 +474,30 @@ def check_active_bins_below_threshold(active_bins, bin_threshold=10):
                             violations.append((run_idx, ep_idx, t_idx, dim_idx, bin_idx))
 
     return violations
+
+def compute_peaks(rate_maps_runs):
+    all_peaks = []
+
+    for rm in rate_maps_runs:
+        peaks = np.nanmax(rm, axis=(1,2))  # per unit
+        all_peaks.extend(peaks)
+
+    return np.array(all_peaks)
+
+def build_peak_dataset(data):
+    """
+    returns:
+    peaks[env][model] = 1D array of unit peaks
+    """
+
+    peaks = {}
+
+    for model in data:
+        for env in data[model]:
+
+            if env not in peaks:
+                peaks[env] = {}
+
+            peaks[env][model] = compute_peaks(data[model][env])
+
+    return peaks
