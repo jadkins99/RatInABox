@@ -241,6 +241,7 @@ def run_experiment(env,ag, placecells,actor,critic,n_bins,experiment_cfg, env_sh
 
     print(f"Computing and plotting unit rate maps and occupancy maps...")
     rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5, obstacles=OBSTACLES[env_shape])
+    save_data(rate_maps, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{seed}", f'rate_maps_units_seed_{seed}'))
     plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_rate_maps_seed_{seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_occupancy_seed_{seed}.png")
 

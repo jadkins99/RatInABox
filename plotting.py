@@ -52,6 +52,7 @@ def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, 
     if reward:
         fig, ax = plot_reward_history(env)
         fig.savefig(os.path.join(save_dir, "reward_history.png"))
+        
 
     fig, ax = critic.plot_rate_map()
     fig.suptitle("Value function")
@@ -74,6 +75,8 @@ def plot_rate_maps(env, ag, placecells, actor, critic, goal_pos, reward_radius, 
         )
         display_reward_patch(fig, ax, reward_pos=goal_pos, reward_radius=reward_radius)
         fig.savefig(os.path.join(save_dir, "trajectory.png"))
+
+    plt.close('all')
 
 
 def plot_neurons_over_time(
@@ -164,7 +167,7 @@ def plot_bin_counts_per_percentage(bin_counts, percentages=[10,30,50,70,90,100],
         if save:
             plt.savefig(f"{filename}/bin_counts_{perc}percent.png", dpi=300, bbox_inches="tight")
 
-
+    plt.close('all')
 
 def plot_occupancy_map(
     occupancy_map,
@@ -278,6 +281,7 @@ def plot_units_rate_maps(
             dpi=300,
             bbox_inches="tight"
         )
+        plt.close(fig)
 
     return fig, axes
 
@@ -310,6 +314,7 @@ def plot_average_units_rate_map(rate_maps, fill_na=False, save_dir=None, filenam
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
         fig.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches="tight")
+        plt.close(fig)
 
     return fig, ax
 
@@ -355,5 +360,6 @@ def plot_multiple_models(
 
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         fig.savefig(filename, dpi=300, bbox_inches="tight")
+        plt.close(fig)
 
     return fig, ax
