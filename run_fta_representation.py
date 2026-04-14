@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 5000
+N_EPISODES = 3
 
 OBSTACLES = {
     "empty": [],
@@ -336,9 +336,9 @@ pre_fta_relu = nn.ReLU()
 
 critic_relu_fta = nn.Sequential(
     nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),              # 0
-    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
     pre_fta_relu,
     nn.Linear(PRE_FTA_DIM, PRE_FTA_DIM),              # 2: expand to 20 -> 20
+    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
     pypi_relu_fta,                                             # 2
     nn.Linear(fta_out_dim, 1),                 # 3: compress 220 -> 1                          
 )
@@ -461,9 +461,9 @@ baseline_double_relu_2 = nn.ReLU()
 
 critic_double_relu = nn.Sequential(
     nn.Linear(N_PLACE_CELLS, 20),  # 0
-    nn.LayerNorm(20, elementwise_affine=False), # 1: non-adaptive
     baseline_double_relu_1,                           # 1
     nn.Linear(20, 220),     # 2
+    nn.LayerNorm(220, elementwise_affine=False),
     baseline_double_relu_2,                           # 3
     nn.Linear(220, 1),               # 4
 )

@@ -440,3 +440,26 @@ def plot_peaks_per_environment(peaks_by_env, save_dir="figures", model_colors=MO
         plt.close()
 
         print(f"Saved: {filename}")
+
+def plot_rsm_decay(model_results):
+    """
+    model_results[model] = (centers, means)
+    """
+
+    plt.figure(figsize=(6, 4))
+
+    for model, (x, y) in model_results.items():
+        plt.plot(x, y, label=model, lw=2)
+
+    plt.xlabel("Spatial distance")
+    plt.ylabel("Population similarity")
+    plt.title("RSM decay (spatial coding structure)")
+    plt.legend()
+    plt.grid(False)
+
+    ax = plt.gca()
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    plt.tight_layout()
+    plt.show()
