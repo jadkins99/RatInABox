@@ -52,7 +52,7 @@ PRE_FTA_DIM = 20
 N_PLACE_CELLS = 50
 ETA = 0.002
 
-N_EPISODES = 3
+N_EPISODES = 5000
 
 OBSTACLES = {
     "empty": [],
@@ -450,12 +450,10 @@ run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, n_bins=
 # ══════════════════════════════════════════════════════════════════════════
 
 print("\n" + "=" * 60)
-print("Baseline agent ReLU 220 units")
+print("Baseline agent Double ReLU 220 units")
 print("=" * 60)
 
 set_seed(args.seed)
-
-
 
 baseline_double_relu_1 = nn.ReLU()
 baseline_double_relu_2 = nn.ReLU()
