@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--env_shape", type=str, default="empty")
 args = parser.parse_args()
 
-models = ["FTA", "ReLU_20_units", "ReLU_220_units"]
+models = ["FTA", "ReLU_FTA", "ReLU_20_units", "ReLU_220_units", "Double_ReLU_220_units"]
 
 sparsity_results = {}
 dead_results = {}
