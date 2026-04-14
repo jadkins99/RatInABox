@@ -120,13 +120,23 @@ def find_penultimate_layer(net: nn.Module) -> nn.Module:
     layers = list(seq.children())
 
     last_linear_idx = None
+
+    print("\n--- Network structure ---")
     for i, layer in enumerate(layers):
+        print(f"[{i}] {layer.__class__.__name__}")
         if isinstance(layer, nn.Linear):
+            print(f"     size: {layer.in_features} → {layer.out_features}")
             last_linear_idx = i
 
     if last_linear_idx is None:
         raise ValueError("No Linear layer found.")
     if last_linear_idx == 0:
         raise ValueError("No penultimate layer exists.")
+    
+    penultimate = layers[last_linear_idx - 1]
 
-    return layers[last_linear_idx - 1]
+    print("\n--- Penultimate layer ---")
+    print(f"Index: {last_linear_idx - 1}")
+    print(f"Type: {penultimate.__class__.__name__}")
+
+    return penultimate

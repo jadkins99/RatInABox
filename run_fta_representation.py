@@ -25,7 +25,7 @@ from ratinabox.Neurons import PlaceCells
 
 from ac import Actor, Critic
 from experiments import ExperimentConfig, _make_env_and_agent, _run_single_episode
-from activation_recorder import find_layer_module
+from activation_recorder import find_penultimate_layer
 from viz import plot_sparsity_map, display_reward_patch
 from networks import Backbone, VxVyGaussianHead
 from plotting import plot_average_units_rate_map, plot_bin_counts_per_percentage, plot_neurons_over_time, plot_bin_counts_per_percentage, plot_occupancy_map, plot_rate_maps, plot_units_rate_maps
@@ -218,9 +218,9 @@ def run_multiple_episodes(
     
     return all_episode_time, all_episodes_state, all_out_arrays
 
-def run_experiment(env,ag, placecells,actor,critic,layer,n_bins,experiment_cfg, env_shape="empty", seed=0):
+def run_experiment(env,ag, placecells,actor,critic,n_bins,experiment_cfg, env_shape="empty", seed=0):
 
-    layer = find_layer_module(critic.NeuralNetworkModule, layer)
+    layer = find_penultimate_layer(critic.NeuralNetworkModule)
 
     model = experiment_cfg.label
 
@@ -312,7 +312,7 @@ critic_f = Critic(ag_f, params={'n':1,'input_layers': [pc_f], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta, seed = args.seed,)
+run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta, seed = args.seed,)
 
 # ══════════════════════════════════════════════════════════════════════════
 # ReLU FTA - Layer agent
@@ -358,7 +358,7 @@ critic_relu_fta = Critic(ag_relu_fta, params={'n':1,'input_layers': [pc_relu_fta
 
 print(f"Starting experiment") 
 
-run_experiment(env_relu_fta, ag_relu_fta, pc_relu_fta, actor_relu_fta, critic_relu_fta, layer=PyPiFTA, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_relu_fta, seed = args.seed,)
+run_experiment(env_relu_fta, ag_relu_fta, pc_relu_fta, actor_relu_fta, critic_relu_fta, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_relu_fta, seed = args.seed,)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -401,7 +401,7 @@ critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModu
 
 print(f"Starting experiment") 
 
-run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, layer=torch.nn.ReLU, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape, seed = args.seed)
+run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape, seed = args.seed)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU 220 units
@@ -442,7 +442,7 @@ critic_b_220 = Critic(ag_b_220, params={'n':1,'input_layers': [pc_b_220], 'Neura
 
 print(f"Starting experiment") 
 
-run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, layer=torch.nn.ReLU, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape, seed = args.seed,)
+run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape, seed = args.seed,)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU - ReLU 220 units
@@ -486,7 +486,7 @@ critic_double_relu_220 = Critic(ag_double_relu_220, params={'n':1,'input_layers'
 
 print(f"Starting experiment") 
 
-run_experiment(env_double_relu_220, ag_double_relu_220, pc_double_relu_220, actor_double_relu_220, critic_double_relu_220, layer=torch.nn.ReLU, n_bins=220, experiment_cfg=cfg_double_relu_220, env_shape=args.env_shape, seed = args.seed,)
+run_experiment(env_double_relu_220, ag_double_relu_220, pc_double_relu_220, actor_double_relu_220, critic_double_relu_220, n_bins=220, experiment_cfg=cfg_double_relu_220, env_shape=args.env_shape, seed = args.seed,)
 
 
 print('\nDone!')
