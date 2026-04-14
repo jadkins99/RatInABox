@@ -327,7 +327,7 @@ def plot_multiple_models(
         x = np.arange(len(mean))
 
         ax.plot(x, mean, lw=2, label=model)
-        ax.fill_between(x, low, high, alpha=0.3)
+        ax.fill_between(x, low, high, alpha=0.5)
 
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)

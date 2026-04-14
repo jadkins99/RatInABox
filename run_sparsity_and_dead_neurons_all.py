@@ -52,6 +52,14 @@ for model in models:
 # Plot: Sparsity
 # =========================
 
+print("\nPlotting sparsity for all models...")
+
+for model in models:
+    print(f"Model: {model}")
+    print(f"  Sparsity mean: {sparsity_results[model][0][-1]:.2f}%")
+    print(f"  Sparsity 95% CI: [{sparsity_results[model][1][-1]:.2f}%, {sparsity_results[model][2][-1]:.2f}%]")
+
+
 plot_multiple_models(
     sparsity_results,
     x_label="episodes",
@@ -66,6 +74,14 @@ plot_multiple_models(
 # =========================
 # Plot: Dead neurons
 # =========================
+
+print("\nPlotting dead neurons for all models...")
+
+for model in models:
+    print(f"Model: {model}")
+    print(f"  Dead neurons mean: {dead_results[model][0][-1]:.2f}%")
+    print(f"  Dead neurons 95% CI: [{dead_results[model][1][-1]:.2f}%, {dead_results[model][2][-1]:.2f}%]")
+
 
 plot_multiple_models(
     dead_results,

@@ -1,14 +1,16 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
-def bootstrap_ci(arr, n_boot=2000, alpha=0.05):
+def bootstrap_ci(arr, n_boot=2000, alpha=0.05, seed=42):
     arr = np.asarray(arr)
     arr = arr[~np.isnan(arr)]
 
     if len(arr) == 0:
         return np.nan, np.nan, np.nan
 
-    boots = np.random.choice(arr, size=(n_boot, len(arr)), replace=True)
+    rng = np.random.default_rng(seed)
+
+    boots = rng.choice(arr, size=(n_boot, len(arr)), replace=True)
     stats = np.mean(boots, axis=1)
 
     low = np.percentile(stats, 100 * alpha / 2)
@@ -39,6 +41,28 @@ def compute_sparsity_per_timestep_single(out_arrays, thres=0.1):
         dead_percent.append(inactive.mean() * 100)
 
     return np.array(dead_percent)
+
+def compute_sparsity_per_episode_single(out_arrays, thres=0.1):
+    """
+    Computes the percentage of inactive features per episode for a single run.
+
+    Args:
+        out_arrays: list[episodes][timesteps] of FTA output vectors
+        thres:      threshold below which a feature is considered inactive
+
+    Returns:
+        sparsity_per_episode: array of % inactive features per episode
+    """
+    sparsity_per_episode = []
+
+    for ep_out in out_arrays:
+        ep_out = np.array(ep_out)  # (timesteps, features)
+        inactive = ep_out < thres
+        percent_timestep = inactive.mean(axis=1) * 100  # % per timestep
+        percent_episode = percent_timestep.mean()        # average across timesteps
+        sparsity_per_episode.append(percent_episode)
+
+    return np.array(sparsity_per_episode)
 
 
 def compute_sparsity_per_timestep(out_arrays, thres=0.1):
