@@ -219,38 +219,45 @@ def plot_occupancy_map(
     return fig, ax
 
 
-def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, filename=None, vmin=0, vmax=3):
+def plot_units_rate_maps(
+    rate_maps,
+    fill_na=False,
+    n_cols=10,
+    save_dir=None,
+    filename=None,
+    vmin=0,
+    vmax=3
+):
     """
-    Plot the rate map for each unit.
-    Unvisited bins (NaN) are set to the minimum visited value.
-
-    Args:
-        rate_maps: np.array of shape (n_units, n_bins, n_bins)
-        fill_na:   whether to fill NaN values with the minimum visited value (default: False)
-        n_cols:    number of columns in the plot grid
-        save_dir:  directory to save the plot (optional)
+    Plot rate maps using consistent (y, x) convention.
     """
 
     n_units = rate_maps.shape[0]
-    n_rows  = int(np.ceil(n_units / n_cols))
+    n_rows = int(np.ceil(n_units / n_cols))
 
-    # vmin = np.nanmin(rate_maps)
-    # vmax = np.nanmax(rate_maps)
+    data = rate_maps.copy()
+
     if fill_na:
-        rate_maps = np.where(np.isnan(rate_maps), vmin, rate_maps)
+        data = np.where(np.isnan(data), vmin, data)
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 2, n_rows * 2))
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(n_cols * 2, n_rows * 2)
+    )
+
     axes = np.array(axes).reshape(n_rows, n_cols)
 
     for unit in range(n_units):
         ax = axes[unit // n_cols, unit % n_cols]
+
         im = ax.imshow(
-            rate_maps[unit].T,
+            data[unit],          # ❗ NO TRANSPOSE
             origin='lower',
             cmap='viridis',
             vmin=vmin,
             vmax=vmax
         )
+
         ax.set_title(f"Unit {unit}", fontsize=8)
         ax.set_xticks([])
         ax.set_yticks([])
@@ -259,14 +266,18 @@ def plot_units_rate_maps(rate_maps, fill_na=False, n_cols=10, save_dir=None, fil
     for i in range(n_units, n_rows * n_cols):
         axes[i // n_cols, i % n_cols].set_visible(False)
 
-    # Add colorbar on the right side of the figure
+    # Colorbar
     fig.subplots_adjust(right=0.9)
     cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
     fig.colorbar(im, cax=cbar_ax, label="Activation")
 
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
-        fig.savefig(os.path.join(save_dir, filename), dpi=300, bbox_inches="tight")
+        fig.savefig(
+            os.path.join(save_dir, filename),
+            dpi=300,
+            bbox_inches="tight"
+        )
 
     return fig, axes
 

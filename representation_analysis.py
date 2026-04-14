@@ -247,62 +247,54 @@ def compute_bin_counts_per_timestep_single(out_arrays, num_bins, threshold=0.1):
 
     return np.array(all_counts)  # shape: (timesteps, num_bins)
 
-import numpy as np
-from scipy.ndimage import gaussian_filter1d
-
 
 def compute_rate_maps_single(
     states,
     out_arrays,
     n_spatial_bins=15,
-    buffer=1e-5,
     filter_size=1.5,
-    obstacles=None   # NEW
+    obstacles=None
 ):
     """
-    Rate maps for representations.
-
-    states:     list[episodes][timesteps] of (x,y)
-    out_arrays: list[episodes][timesteps] of (n_units,)
-    obstacles:  list of dicts with x_min, x_max, y_min, y_max
+    Rate maps using consistent (y, x) indexing.
+    Assumes environment is [0,1] x [0,1].
     """
 
     # =========================
-    # Flatten episodes
+    # Flatten
     # =========================
     position = np.array([s for ep in states for s in ep])
     trace    = np.array([o for ep in out_arrays for o in ep])
 
-    len_recording = trace.shape[0]
     n_units = trace.shape[1]
+    T = trace.shape[0]
 
     rate_maps = np.zeros((n_units, n_spatial_bins, n_spatial_bins))
     count_map = np.zeros((n_spatial_bins, n_spatial_bins))
 
     # =========================
-    # Bin positions
+    # Bin positions (NO swapping issues)
     # =========================
-    position_binned = (
-        position // ((np.nanmax(position, axis=0) + buffer) / n_spatial_bins)
-    ).astype(int)
+    position = np.clip(position, 0.0, 1.0)
 
+    position_binned = (position * n_spatial_bins).astype(int)
     position_binned = np.clip(position_binned, 0, n_spatial_bins - 1)
 
     # =========================
-    # Accumulate
+    # ACCUMULATION (FIXED: y, x order)
     # =========================
     for t, (x, y) in enumerate(position_binned):
-        rate_maps[:, x, y] += trace[t]
-        count_map[x, y] += 1
+        rate_maps[:, y, x] += trace[t]
+        count_map[y, x] += 1
 
     # =========================
-    # Base mask (visited bins)
+    # Occupancy mask
     # =========================
     nan_map = np.full_like(count_map, np.nan)
     nan_map[count_map > 0] = 1.0
 
     # =========================
-    # 🔥 ADD: obstacle masking
+    # Obstacles (FIXED indexing)
     # =========================
     if obstacles is not None and len(obstacles) > 0:
         bin_edges = np.linspace(0, 1, n_spatial_bins + 1)
@@ -310,21 +302,18 @@ def compute_rate_maps_single(
         for obs in obstacles:
             for ix in range(n_spatial_bins):
                 for iy in range(n_spatial_bins):
-                    bin_x_min = bin_edges[ix]
-                    bin_x_max = bin_edges[ix + 1]
-                    bin_y_min = bin_edges[iy]
-                    bin_y_max = bin_edges[iy + 1]
 
-                    # Check overlap between bin and obstacle
+                    bin_x_min, bin_x_max = bin_edges[ix], bin_edges[ix + 1]
+                    bin_y_min, bin_y_max = bin_edges[iy], bin_edges[iy + 1]
+
                     if (bin_x_min <= obs['x_max'] and bin_x_max >= obs['x_min'] and
                         bin_y_min <= obs['y_max'] and bin_y_max >= obs['y_min']):
-                        nan_map[ix, iy] = np.nan
+                        nan_map[iy, ix] = np.nan
 
     # =========================
-    # Normalize BEFORE smoothing
+    # Normalize
     # =========================
-    for u in range(n_units):
-        rate_maps[u] = rate_maps[u] / np.where(count_map > 0, count_map, 1)
+    rate_maps = rate_maps / np.where(count_map > 0, count_map, 1)
 
     # =========================
     # Smooth
@@ -334,15 +323,12 @@ def compute_rate_maps_single(
         rate_maps = gaussian_filter1d(rate_maps, sigma=filter_size, axis=2)
 
     # =========================
-    # Apply mask AFTER smoothing
+    # Apply mask
     # =========================
     for u in range(n_units):
         rate_maps[u] *= nan_map
 
-    # =========================
-    # Occupancy map
-    # =========================
-    occupancy_map = count_map / len_recording
+    occupancy_map = count_map / T
 
     return rate_maps, occupancy_map
 
