@@ -1,139 +1,84 @@
 from utils import load_rate_maps
 from representation_analysis import build_peak_dataset
-from plotting import plot_peaks_per_environment, plot_rsm_decay
-import matplotlib.pyplot as plt
-from scipy.stats import pearsonr
+from plotting import plot_peaks_per_environment, plot_pv_matrix_pairwise
 import numpy as np
 
-
-# =========================================================
-# 1. Convert rate maps → population vectors per spatial bin
-# =========================================================
-def get_population_vectors(rate_maps):
+def rate_maps_to_population(rate_maps):
     """
     rate_maps: (n_units, H, W)
 
     returns:
-    pop_vecs: (H, W, n_units)
+    (H*W, n_units)
     """
     n_units, H, W = rate_maps.shape
+    return rate_maps.reshape(n_units, -1).T
 
-    pop_vecs = np.zeros((H, W, n_units))
-
-    for u in range(n_units):
-        pop_vecs[:, :, u] = rate_maps[u]
-
-    return pop_vecs
-
-
-# =========================================================
-# 2. Normalize (VERY IMPORTANT for fair comparison)
-# =========================================================
-def normalize_pop_vectors(pop_vecs):
-    H, W, n_units = pop_vecs.shape
-
-    flat = pop_vecs.reshape(-1, n_units)
-
-    flat = (flat - flat.mean(axis=1, keepdims=True)) / (
-        flat.std(axis=1, keepdims=True) + 1e-8
+def normalize_population(pop):
+    return (pop - pop.mean(axis=1, keepdims=True)) / (
+        pop.std(axis=1, keepdims=True) + 1e-8
     )
 
-    return flat.reshape(H, W, n_units)
-
-
-# =========================================================
-# 3. Compute pixel-wise RSM
-# =========================================================
-def spatial_rsm(pop_vecs):
+def compute_pv_matrix(rate_maps_A, rate_maps_B):
     """
-    pop_vecs: (H, W, n_units)
+    rate_maps_A: (n_units, H, W)
+    rate_maps_B: (n_units, H, W)
 
-    returns:
-    rsm: (H*W, H*W)
+    Returns:
+        (H*W, H*W) pixel-wise correlation matrix
     """
-    H, W, n_units = pop_vecs.shape
 
-    flat = pop_vecs.reshape(H * W, n_units)
-
+    n_units, H, W = rate_maps_A.shape
     n_bins = H * W
-    rsm = np.zeros((n_bins, n_bins))
+
+    # Flatten
+    A = rate_maps_A.reshape(n_units, n_bins).T  # (n_bins, n_units)
+    B = rate_maps_B.reshape(n_units, n_bins).T
+
+    pv_matrix = np.zeros((n_bins, n_bins))
 
     for i in range(n_bins):
         for j in range(n_bins):
 
-            rsm[i, j] = np.corrcoef(flat[i], flat[j])[0, 1]
+            a = A[i]
+            b = B[j]
 
-    return rsm
+            # valid neurons only (ignore NaNs)
+            mask = (~np.isnan(a)) & (~np.isnan(b))
 
+            if np.sum(mask) > 1:
+                pv_matrix[i, j] = np.corrcoef(a[mask], b[mask])[0, 1]
+            else:
+                pv_matrix[i, j] = np.nan
 
-# =========================================================
-# 4. Spatial distance matrix
-# =========================================================
-def spatial_distance_matrix(H, W):
-    coords = [(i, j) for i in range(H) for j in range(W)]
-    n = len(coords)
+    return pv_matrix
 
-    dist = np.zeros((n, n))
+def compute_pv_all_envs(data_model):
+    envs = sorted(list(data_model.keys()))
 
-    for i, (x1, y1) in enumerate(coords):
-        for j, (x2, y2) in enumerate(coords):
-            dist[i, j] = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    # average across runs
+    mean_maps = {
+        env: np.mean(np.stack(data_model[env]), axis=0)
+        for env in envs
+    }
 
-    return dist
+    example = next(iter(mean_maps.values()))
+    H, W = example.shape[1:]
+    print(f"Rate maps shape: {example.shape} (n_units, H, W)")
 
+    for env in mean_maps:
+        print(env, mean_maps[env].shape)
 
-# =========================================================
-# 5. Extract decay curve
-# =========================================================
-def rsm_decay_curve(rsm, dist):
-    upper = np.triu_indices_from(rsm, k=1)
+    pv_matrix = np.zeros((len(envs), len(envs), H*W, H*W))
 
-    d_vals = dist[upper]
-    r_vals = rsm[upper]
+    for i, env1 in enumerate(envs):
+        for j, env2 in enumerate(envs):
 
-    return d_vals, r_vals
+            pv_matrix[i, j] = compute_pv_matrix(
+                mean_maps[env1],
+                mean_maps[env2]
+            )
 
-
-# =========================================================
-# 6. Bin + average decay
-# =========================================================
-def bin_decay(d, r, n_bins=20):
-    bins = np.linspace(0, np.max(d), n_bins + 1)
-
-    digitized = np.digitize(d, bins)
-
-    means = []
-    centers = []
-
-    for i in range(1, len(bins)):
-        mask = digitized == i
-        if np.sum(mask) > 0:
-            means.append(np.mean(r[mask]))
-            centers.append(bins[i])
-
-    return np.array(centers), np.array(means)
-
-
-# =========================================================
-# 7. Full pipeline per model/env
-# =========================================================
-def compute_rsm_decay(rate_maps):
-    """
-    rate_maps: (n_units, H, W)
-    """
-
-    H, W = rate_maps.shape[1:]
-
-    pop_vecs = get_population_vectors(rate_maps)
-    pop_vecs = normalize_pop_vectors(pop_vecs)
-
-    rsm = spatial_rsm(pop_vecs)
-    dist = spatial_distance_matrix(H, W)
-
-    d, r = rsm_decay_curve(rsm, dist)
-
-    return bin_decay(d, r)
-
+    return envs, pv_matrix
 
 print("Loading rate maps...")
 data = load_rate_maps("data")
@@ -142,22 +87,18 @@ peaks = build_peak_dataset(data)
 print("Plotting peaks per environment...")
 plot_peaks_per_environment(peaks)
 
-print("Analyzing rate map spatial structure...")
 
-env = "env_walls"
-
-model_results = {}
+print("Computing and plotting PV matrices...")
 
 for model in data:
-    print(model)
 
-    all_maps = data[model][env]  # list of runs
+    print(f"Processing {model}")
 
-    # average across runs first
-    mean_map = np.mean(np.stack(all_maps), axis=0)
+    envs, pv_matrix = compute_pv_all_envs(data[model])
 
-    x, y = compute_rsm_decay(mean_map)
-
-    model_results[model] = (x, y)
-
-plot_rsm_decay(model_results)
+    plot_pv_matrix_pairwise(
+        envs,
+        pv_matrix,
+        model_name=model,
+        save_dir="figures/pv_matrices"
+    )

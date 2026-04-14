@@ -441,25 +441,49 @@ def plot_peaks_per_environment(peaks_by_env, save_dir="figures", model_colors=MO
 
         print(f"Saved: {filename}")
 
-def plot_rsm_decay(model_results):
-    """
-    model_results[model] = (centers, means)
-    """
+def plot_pv_matrix_pairwise(envs, pv_matrix, model_name, save_dir=None):
+    n_envs = len(envs)
 
-    plt.figure(figsize=(6, 4))
+    fig = plt.figure(figsize=(4*n_envs, 4*n_envs))
 
-    for model, (x, y) in model_results.items():
-        plt.plot(x, y, label=model, lw=2)
+    count = 1
 
-    plt.xlabel("Spatial distance")
-    plt.ylabel("Population similarity")
-    plt.title("RSM decay (spatial coding structure)")
-    plt.legend()
-    plt.grid(False)
+    for i, env1 in enumerate(envs):
+        for j, env2 in enumerate(envs):
 
-    ax = plt.gca()
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+            ax = plt.subplot(n_envs, n_envs, count)
+            count += 1
+
+            im = ax.imshow(
+                pv_matrix[i, j],
+                vmin=-0.1,
+                vmax=1.0,
+                cmap="viridis"
+            )
+
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            if j == 0:
+                ax.set_ylabel(env1)
+
+            if i == n_envs - 1:
+                ax.set_xlabel(env2)
+
+    plt.suptitle(model_name)
 
     plt.tight_layout()
-    plt.show()
+
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+        plt.savefig(
+            os.path.join(save_dir, f"{model_name}_pv_matrix.png"),
+            dpi=300,
+            bbox_inches="tight"
+        )
+        plt.close(fig)
+
+    else:
+        plt.show()
+
+    return fig
