@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 # --------------------------------------------------
-# BOOTSTRAP FUNCTION (yours)
+# BOOTSTRAP
 # --------------------------------------------------
 def bootstrap_ci(data, n_boot=1000, ci=95):
     rng = np.random.default_rng(42)
@@ -19,7 +19,7 @@ def bootstrap_ci(data, n_boot=1000, ci=95):
 
 
 # --------------------------------------------------
-# LOAD EPISODES
+# LOAD DATA
 # --------------------------------------------------
 def load_episode_histories(root="data"):
     data = {}
@@ -43,14 +43,12 @@ def load_episode_histories(root="data"):
                 if not os.path.isdir(seed_path):
                     continue
 
-                # Find all matching episode files
                 episode_files = [
                     os.path.join(seed_path, f)
                     for f in os.listdir(seed_path)
                     if "all_env_episodes_info_seed" in f
                 ]
 
-                # Load each file found
                 for episode_file in episode_files:
                     with open(episode_file, "rb") as f:
                         episodes = pickle.load(f)
@@ -63,58 +61,93 @@ def load_episode_histories(root="data"):
 
 
 # --------------------------------------------------
-# PLOT WITHOUT SMOOTHING
+# EPISODE → TIMESTEP EXPANSION
+# --------------------------------------------------
+def build_timestep_sequences(runs):
+    all_sequences = []
+
+    for run in runs:
+        seq = []
+
+        for duration in run[-1]["duration"]:
+            success = 1 if duration < 15 else 0
+            seq.extend([success] * int(duration))
+
+        all_sequences.append(seq)
+
+    return all_sequences
+
+
+# --------------------------------------------------
+# PLOTTING PER MODEL (inside one env)
 # --------------------------------------------------
 def plot_learning_curve_bootstrap(runs, label=None):
-    all_durations = [run['duration'] for run in runs]
 
-    # align runs
-    min_len = min(len(d) for d in all_durations)
-    durations = np.array([d[:min_len] for d in all_durations])  # (n_runs, T)
+    sequences = build_timestep_sequences(runs)
 
-    n_runs, T = durations.shape
+    min_len = min(len(s) for s in sequences)
+    data = np.array([s[:min_len] for s in sequences])
 
-    mean = durations.mean(axis=0)
+    T = data.shape[1]
+
+    mean = data.mean(axis=0)
 
     ci_low = np.zeros(T)
     ci_high = np.zeros(T)
 
-    # bootstrap per timestep
     for t in range(T):
-        lo, hi = bootstrap_ci(durations[:, t])
+        lo, hi = bootstrap_ci(data[:, t])
         ci_low[t] = lo
         ci_high[t] = hi
 
-    episodes = np.arange(T)
+    x = np.arange(T)
 
-    plt.plot(episodes, mean, label=label)
-    plt.fill_between(episodes, ci_low, ci_high, alpha=0.3)
+    plt.plot(x, mean, label=label)
+    plt.fill_between(x, ci_low, ci_high, alpha=0.3)
 
 
 # --------------------------------------------------
-# MAIN
+# MAIN: ONE FIGURE PER ENVIRONMENT
 # --------------------------------------------------
 def plot_all_experiments(root="data"):
     data = load_episode_histories(root)
 
-    plt.figure(figsize=(8, 5))
-
+    # assume same envs across models
+    envs = set()
     for model in data:
-        for env in data[model]:
+        envs.update(data[model].keys())
+
+    for env in sorted(envs):
+
+        plt.figure(figsize=(8, 5))
+
+        for model in data:
+            if env not in data[model]:
+                continue
+
             runs = data[model][env]
-            label = f"{model}-{env}"
+            label = f"{model}"
+
             plot_learning_curve_bootstrap(runs, label=label)
 
-    plt.xlabel("Episodes")
-    plt.ylabel("Duration")
-    plt.title("Learning Curves")
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+        plt.xlabel("Timesteps")
+        plt.ylabel("Success rate (episode outcome repeated)")
+        plt.title(f"Learning Curve — {env}")
+        plt.legend()
+        plt.tight_layout()
+
+        # save per environment
+        save_dir = os.path.join("figures", "env_plots")
+        os.makedirs(save_dir, exist_ok=True)
+
+        save_path = os.path.join(save_dir, f"{env}_learning_curve.png")
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
+
+        plt.show()
 
 
 # --------------------------------------------------
 # RUN
 # --------------------------------------------------
-
-plot_all_experiments(root="data")
+if __name__ == "__main__":
+    plot_all_experiments(root="data")
