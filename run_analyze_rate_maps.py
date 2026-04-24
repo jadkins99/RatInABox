@@ -101,5 +101,7 @@ for model in data:
         envs,
         pv_matrix,
         model_name=model,
-        save_dir="figures/pv_matrices"
+        save_dir="figures/pv_matrices", 
+        vmin=-0.1,
+        vmax=1.0
     )
