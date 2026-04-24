@@ -272,6 +272,10 @@ parser.add_argument("--seed", type=int, default=0)
 parser.add_argument("--env_shape", type=str, default="empty")
 args = parser.parse_args()
 
+if args.env_shape == 'walls':
+    N_EPISODES = 5
+
+print(f"Running experiment with seed {args.seed} in environment shape '{args.env_shape}' for {N_EPISODES} episodes.\n")
 # ══════════════════════════════════════════════════════════════════════════
 # FTA - Layer agent
 # ══════════════════════════════════════════════════════════════════════════

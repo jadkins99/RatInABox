@@ -43,19 +43,18 @@ def load_episode_histories(root="data"):
                 if not os.path.isdir(seed_path):
                     continue
 
-                episode_file = None
-                for f in os.listdir(seed_path):
-                    if "episodes" in f:
-                        episode_file = os.path.join(seed_path, f)
-                        break
+                # Find all matching episode files
+                episode_files = [
+                    os.path.join(seed_path, f)
+                    for f in os.listdir(seed_path)
+                    if "all_env_episodes_info_seed" in f
+                ]
 
-                if episode_file is None:
-                    continue
-
-                with open(episode_file, "rb") as f:
-                    episodes = pickle.load(f)
-
-                runs.append(episodes)
+                # Load each file found
+                for episode_file in episode_files:
+                    with open(episode_file, "rb") as f:
+                        episodes = pickle.load(f)
+                    runs.append(episodes)
 
             if runs:
                 data[model][env] = runs
@@ -108,7 +107,7 @@ def plot_all_experiments(root="data"):
 
     plt.xlabel("Episodes")
     plt.ylabel("Duration")
-    plt.title("Learning Curves (Bootstrap CI, No Smoothing)")
+    plt.title("Learning Curves")
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -117,5 +116,5 @@ def plot_all_experiments(root="data"):
 # --------------------------------------------------
 # RUN
 # --------------------------------------------------
-if __name__ == "__main__":
-    plot_all_experiments(root="data")
+
+plot_all_experiments(root="data")
