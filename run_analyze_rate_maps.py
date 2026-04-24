@@ -3,6 +3,7 @@ from representation_analysis import build_peak_dataset
 from plotting import plot_peaks_per_environment, plot_pv_matrix_pairwise
 import numpy as np
 
+
 def rate_maps_to_population(rate_maps):
     """
     rate_maps: (n_units, H, W)

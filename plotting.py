@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt 
 import numpy as np
 import ratinabox
+import matplotlib as mpl
 
 MODEL_COLORS = {
     "FTA": "#1f77b4",        # blue
@@ -446,14 +447,21 @@ def plot_peaks_per_environment(peaks_by_env, save_dir="figures", model_colors=MO
 
         print(f"Saved: {filename}")
 
+
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+
 def plot_pv_matrix_pairwise(
     envs,
     pv_matrix,
     model_name,
     rate_maps=None,
     save_dir=None,
-    vmin=-0.1,
-    vmax=1.0
+    vmin=None,
+    vmax=None
 ):
 
     n_envs = len(envs)
@@ -461,11 +469,20 @@ def plot_pv_matrix_pairwise(
     fig = plt.figure(figsize=(4 * n_envs, 4 * n_envs))
 
     # =========================
-    # Layout (IMPORTANT)
+    # FORCE GLOBAL SCALE
+    # =========================
+    if vmin is None:
+        vmin = np.min(pv_matrix)
+
+    if vmax is None:
+        vmax = np.max(pv_matrix)
+
+    # =========================
+    # Layout
     # =========================
     fig.subplots_adjust(
         left=0.05,
-        right=0.9,   # leave space for colorbar
+        right=0.9,
         bottom=0.05,
         top=0.9,
         wspace=0.05,
@@ -495,9 +512,9 @@ def plot_pv_matrix_pairwise(
 
             im = ax.imshow(
                 pv_matrix[i, j],
+                cmap="coolwarm",
                 vmin=vmin,
-                vmax=vmax,
-                cmap="coolwarm"
+                vmax=vmax
             )
 
             ax.set_xticks([])
@@ -510,7 +527,7 @@ def plot_pv_matrix_pairwise(
                 ax.set_xlabel(env2, fontsize=10)
 
     # =========================
-    # Title
+    # TITLE
     # =========================
     plt.suptitle(
         f"{model_name}\n{bin_text}",
@@ -518,18 +535,19 @@ def plot_pv_matrix_pairwise(
     )
 
     # =========================
-    # COLORBAR (far right)
+    # COLORBAR (correct scaling)
     # =========================
-    cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    sm = mpl.cm.ScalarMappable(norm=norm, cmap="coolwarm")
+    sm.set_array([])
 
-    cbar = fig.colorbar(im, cax=cbar_ax)
+    cbar_ax = fig.add_axes([0.92, 0.15, 0.015, 0.7])
+    cbar = fig.colorbar(sm, cax=cbar_ax)
+
     cbar.set_label("Population vector correlation (r)", fontsize=12)
 
-    # Optional ticks (nice for papers)
-    cbar.set_ticks([-0.1, 0, 0.5, 1.0])
-
     # =========================
-    # Save / show
+    # SAVE / SHOW
     # =========================
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
