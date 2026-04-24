@@ -8,6 +8,7 @@ Baseline architecture:
 import argparse
 import random
 import sys, os
+import copy
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'mnt', 'RatInABox'))
 
 import importlib
@@ -142,7 +143,7 @@ def create_hook(ag, env, thres=0.1):
     states = []
     time_steps = []
     out_arrays = []
-
+    
 
     def hook_fn(module, inputs, output):
 
@@ -157,7 +158,6 @@ def create_hook(ag, env, thres=0.1):
         time_steps.append(env.t)
         out_arrays.append(out_flat)
         
-
     return hook_fn, states, time_steps, out_arrays
 
 
@@ -183,6 +183,7 @@ def run_multiple_episodes(
     all_episode_time = []
     all_episodes_state = []
     all_out_arrays = []
+    all_env_episodes_info = []
 
     try: 
         for i in (pbar := tqdm(range(experiment_cfg.n_episodes), desc = "")):
@@ -205,6 +206,7 @@ def run_multiple_episodes(
             all_episode_time.append(time_steps)
             all_episodes_state.append(states)
             all_out_arrays.append(out_arrays)
+            all_env_episodes_info.append(env.episodes)
 
             success_frac = np.mean(np.array(env.episodes['meta_info'][-100:]) == "completed")
             episode_time = np.mean(env.episodes['duration'][-100:])
@@ -216,7 +218,7 @@ def run_multiple_episodes(
         print("Interrupted by user")
 
     
-    return all_episode_time, all_episodes_state, all_out_arrays
+    return all_episode_time, all_episodes_state, all_out_arrays, all_env_episodes_info
 
 def run_experiment(env,ag, placecells,actor,critic,n_bins,experiment_cfg, env_shape="empty", seed=0):
 
@@ -224,32 +226,33 @@ def run_experiment(env,ag, placecells,actor,critic,n_bins,experiment_cfg, env_sh
 
     model = experiment_cfg.label
 
-    print(f"Running experiment for model {model} in env {env_shape} with seed {seed}...")
+    print(f"Running experiment for model {model} in env {env_shape} with seed {seed}...\n")
 
-    print(f"Plotting initial rate maps...")
+    print(f"Plotting initial rate maps...\n")
     plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius, time='before', save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{seed}"))
     
-    all_episodes_time, all_episodes_state, all_out_arrays = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
+    all_episodes_time, all_episodes_state, all_out_arrays, all_env_episodes_info = run_multiple_episodes(env=env,ag=ag,actor=actor,critic=critic,placecells=placecells,num_bins=n_bins,layer=layer,experiment_cfg=experiment_cfg)
 
-    print(f"Experiment completed. Saving data and plotting results...")
+    print(f"Experiment completed. Saving data and plotting results...\n")
     save_data(all_episodes_time, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{seed}", f'all_episodes_time_seed_{seed}'))
     save_data(all_episodes_state, os.path.join(DATA_DIR,model, f"env_{env_shape}", f"seed_{seed}", f'all_episodes_states_seed_{seed}'))
     save_data(all_out_arrays, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{seed}", f'all_out_arrays_seed_{seed}'))
+    save_data(all_env_episodes_info, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{seed}", f'all_env_episodes_info_seed_{seed}'))
 
-    print(f"Plotting rate maps after experiment...")
+    print(f"Plotting rate maps after experiment...\n")
     plot_rate_maps(env, ag, placecells, actor, critic, experiment_cfg.goal_pos, experiment_cfg.goal_radius,time = 'after', reward=True, trajectory=True, save_dir=os.path.join(FIGURES_DIR, model,f"env_{env_shape}", f"seed_{seed}"))
 
-    print(f"Computing and plotting unit rate maps and occupancy maps...")
+    print(f"Computing and plotting unit rate maps and occupancy maps...\n")
     rate_maps, occupancy = compute_rate_maps_single(all_episodes_state, all_out_arrays, filter_size=1.5, obstacles=OBSTACLES[env_shape])
     save_data(rate_maps, os.path.join(DATA_DIR,model, f"env_{env_shape}",f"seed_{seed}", f'rate_maps_units_seed_{seed}'))
     plot_units_rate_maps(rate_maps, save_dir=os.path.join(FIGURES_DIR,model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_rate_maps_seed_{seed}.png")
     plot_occupancy_map(occupancy, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_occupancy_seed_{seed}.png")
 
-    print(f"Plotting average unit rate maps...")
+    print(f"Plotting average unit rate maps...\n")
     plot_average_units_rate_map(rate_maps, save_dir=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}"), filename=f"{model.lower()}_rate_map_avg_units_seed_{seed}_env_{env_shape}.png")
 
     #Dead neurons
-    print(f"Computing and plotting sparsity over time and bin counts...")
+    print(f"Computing and plotting sparsity over time and bin counts...\n")
     sparsity_timestep = compute_sparsity_per_timestep_single(all_out_arrays)
     plot_neurons_over_time(x=np.arange(len(sparsity_timestep)), y =sparsity_timestep, x_label='timesteps', y_label=r'% sparsity', save=True, filename=os.path.join(FIGURES_DIR, model, f"env_{env_shape}", f"seed_{seed}", "sparsity_per_timestep.png"))
     sparsity_episode = compute_sparsity_per_episode_single(all_out_arrays)
@@ -311,7 +314,7 @@ actor_f = Actor(ag_f, params={'n':2,'input_layers': [pc_f], 'NeuralNetworkModule
 critic_f = Critic(ag_f, params={'n':1,'input_layers': [pc_f], 'NeuralNetworkModule': critic_fta,
                                 'tau': cfg_fta.tau, 'tau_z': cfg_fta.tau_e, 'optimizer': opt_fn})
 
-print(f"Starting experiment") 
+print(f"Starting experiment\n") 
 
 run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_fta, seed = args.seed,)
 
@@ -441,7 +444,7 @@ critic_b_220 = Critic(ag_b_220, params={'n':1,'input_layers': [pc_b_220], 'Neura
                                 'tau': cfg_base_220.tau, 'tau_z': cfg_base_220.tau_e, 'optimizer': opt_fn_b_220})
 
 
-print(f"Starting experiment") 
+print(f"Starting experiment\n") 
 
 run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, n_bins=220, experiment_cfg=cfg_base_220, env_shape=args.env_shape, seed = args.seed,)
 

@@ -236,8 +236,8 @@ def plot_units_rate_maps(
     n_cols=10,
     save_dir=None,
     filename=None,
-    vmin=0,
-    vmax=3
+    vmin=None,
+    vmax=None
 ):
     """
     Plot rate maps using consistent (y, x) convention.
@@ -247,6 +247,11 @@ def plot_units_rate_maps(
     n_rows = int(np.ceil(n_units / n_cols))
 
     data = rate_maps.copy()
+
+    if vmin is None:
+        vmin = np.nanmin(rate_maps)
+    if vmax is None:
+        vmax = np.nanmax(rate_maps)
 
     if fill_na:
         data = np.where(np.isnan(data), vmin, data)
