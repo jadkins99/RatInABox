@@ -102,8 +102,15 @@ def plot_learning_curve_bootstrap(runs, label=None):
 
     x = np.arange(T)
 
-    plt.plot(x, mean, label=label)
-    plt.fill_between(x, ci_low, ci_high, alpha=0.3)
+    ax = plt.gca()
+
+    ax.plot(x, mean, label=label)
+    ax.fill_between(x, ci_low, ci_high, alpha=0.3)
+
+    # styling
+    ax.grid(False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
 
 # --------------------------------------------------
@@ -126,14 +133,14 @@ def plot_all_experiments(root="data"):
                 continue
 
             runs = data[model][env]
-            label = f"{model}"
+            label = model.split("_")[0]
 
             plot_learning_curve_bootstrap(runs, label=label)
 
         plt.xlabel("Timesteps")
-        plt.ylabel("Success rate (episode outcome repeated)")
+        plt.ylabel("Success rate")
         plt.title(f"Learning Curve — {env}")
-        plt.legend()
+        # plt.legend()
         plt.tight_layout()
 
         # save per environment
@@ -142,8 +149,7 @@ def plot_all_experiments(root="data"):
 
         save_path = os.path.join(save_dir, f"{env}_learning_curve.png")
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
-
-        plt.show()
+        plt.close()
 
 
 # --------------------------------------------------
