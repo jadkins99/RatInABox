@@ -81,7 +81,7 @@ def build_timestep_sequences(runs):
 # --------------------------------------------------
 # PLOTTING PER MODEL (inside one env)
 # --------------------------------------------------
-def plot_learning_curve_bootstrap(runs, label=None):
+def plot_learning_curve_points(runs, label=None, step=20):
 
     sequences = build_timestep_sequences(runs)
 
@@ -90,6 +90,7 @@ def plot_learning_curve_bootstrap(runs, label=None):
 
     T = data.shape[1]
 
+    # mean across runs
     mean = data.mean(axis=0)
 
     ci_low = np.zeros(T)
@@ -100,12 +101,23 @@ def plot_learning_curve_bootstrap(runs, label=None):
         ci_low[t] = lo
         ci_high[t] = hi
 
-    x = np.arange(T)
+    # -------------------------
+    # SUBSAMPLE
+    # -------------------------
+    idx = np.arange(0, T, step)
+
+    x = idx
+    y = mean[idx]
+    low = ci_low[idx]
+    high = ci_high[idx]
 
     ax = plt.gca()
 
-    ax.plot(x, mean, label=label)
-    ax.fill_between(x, ci_low, ci_high, alpha=0.3)
+    # mean line
+    ax.plot(x, y, label=label)
+
+    # shaded confidence interval
+    ax.fill_between(x, low, high, alpha=0.3)
 
     # styling
     ax.grid(False)
@@ -135,7 +147,7 @@ def plot_all_experiments(root="data"):
             runs = data[model][env]
             label = model.split("_")[0]
 
-            plot_learning_curve_bootstrap(runs, label=label)
+            plot_learning_curve_points(runs, label=label, step=20)
 
         plt.xlabel("Timesteps")
         plt.ylabel("Success rate")
