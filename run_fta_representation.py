@@ -319,90 +319,90 @@ run_experiment(env_f, ag_f, pc_f, actor_f, critic_f, n_bins=total_tiles, env_sha
 # ReLU FTA - Layer agent
 # ══════════════════════════════════════════════════════════════════════════
 
-print("=" * 60)
-print("ReLU FTA agent")
-print("=" * 60)
+# print("=" * 60)
+# print("ReLU FTA agent")
+# print("=" * 60)
 
-set_seed(args.seed)
+# set_seed(args.seed)
 
-pypi_relu_fta = PyPiFTA(
-    bound=BOUND, spillover_base=0, spillover_mode='derive_from_tile_width',
-    tile_width=None, num_tiles=N_TILES,
-)
-total_tiles = pypi_relu_fta.num_tiles  # 11
-fta_out_dim = PRE_FTA_DIM * total_tiles  # 220
+# pypi_relu_fta = PyPiFTA(
+#     bound=BOUND, spillover_base=0, spillover_mode='derive_from_tile_width',
+#     tile_width=None, num_tiles=N_TILES,
+# )
+# total_tiles = pypi_relu_fta.num_tiles  # 11
+# fta_out_dim = PRE_FTA_DIM * total_tiles  # 220
 
-pre_fta_relu = nn.ReLU()
+# pre_fta_relu = nn.ReLU()
 
-critic_relu_fta = nn.Sequential(
-    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),              # 0
-    pre_fta_relu,
-    nn.Linear(PRE_FTA_DIM, PRE_FTA_DIM),              # 2: expand to 20 -> 20
-    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
-    pypi_relu_fta,                                             # 2
-    nn.Linear(fta_out_dim, 1),                 # 3: compress 220 -> 1                          
-)
-print(f'\n{critic_relu_fta}')
+# critic_relu_fta = nn.Sequential(
+#     nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),              # 0
+#     pre_fta_relu,
+#     nn.Linear(PRE_FTA_DIM, PRE_FTA_DIM),              # 2: expand to 20 -> 20
+#     nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
+#     pypi_relu_fta,                                             # 2
+#     nn.Linear(fta_out_dim, 1),                 # 3: compress 220 -> 1                          
+# )
+# print(f'\n{critic_relu_fta}')
 
-actor_relu_fta_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
+# actor_relu_fta_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_relu_fta = ExperimentConfig(label='ReLU_FTA', n_episodes=N_EPISODES, eta=ETA)
-env_relu_fta, ag_relu_fta = _make_env_and_agent(cfg_relu_fta)
-env_relu_fta = get_environment(env_relu_fta, shape=args.env_shape)
-pc_relu_fta = PlaceCells(ag_relu_fta, params={'n': N_PLACE_CELLS})
+# cfg_relu_fta = ExperimentConfig(label='ReLU_FTA', n_episodes=N_EPISODES, eta=ETA)
+# env_relu_fta, ag_relu_fta = _make_env_and_agent(cfg_relu_fta)
+# env_relu_fta = get_environment(env_relu_fta, shape=args.env_shape)
+# pc_relu_fta = PlaceCells(ag_relu_fta, params={'n': N_PLACE_CELLS})
 
-opt_fn = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
-actor_relu_fta = Actor(ag_relu_fta, params={'n':2,'input_layers': [pc_relu_fta], 'NeuralNetworkModule': actor_relu_fta_nn,
-                              'tau': cfg_relu_fta.tau, 'tau_z': cfg_relu_fta.tau_e, 'optimizer': opt_fn})
-critic_relu_fta = Critic(ag_relu_fta, params={'n':1,'input_layers': [pc_relu_fta], 'NeuralNetworkModule': critic_relu_fta,
-                                'tau': cfg_relu_fta.tau, 'tau_z': cfg_relu_fta.tau_e, 'optimizer': opt_fn})
+# opt_fn = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
+# actor_relu_fta = Actor(ag_relu_fta, params={'n':2,'input_layers': [pc_relu_fta], 'NeuralNetworkModule': actor_relu_fta_nn,
+#                               'tau': cfg_relu_fta.tau, 'tau_z': cfg_relu_fta.tau_e, 'optimizer': opt_fn})
+# critic_relu_fta = Critic(ag_relu_fta, params={'n':1,'input_layers': [pc_relu_fta], 'NeuralNetworkModule': critic_relu_fta,
+#                                 'tau': cfg_relu_fta.tau, 'tau_z': cfg_relu_fta.tau_e, 'optimizer': opt_fn})
 
-print(f"Starting experiment") 
+# print(f"Starting experiment") 
 
-run_experiment(env_relu_fta, ag_relu_fta, pc_relu_fta, actor_relu_fta, critic_relu_fta, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_relu_fta, seed = args.seed,)
+# run_experiment(env_relu_fta, ag_relu_fta, pc_relu_fta, actor_relu_fta, critic_relu_fta, n_bins=total_tiles, env_shape=args.env_shape, experiment_cfg=cfg_relu_fta, seed = args.seed,)
 
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU 20 units
 # ══════════════════════════════════════════════════════════════════════════
 
-print("\n" + "=" * 60)
-print("Baseline agent ReLU 20 units")
-print("=" * 60)
+# print("\n" + "=" * 60)
+# print("Baseline agent ReLU 20 units")
+# print("=" * 60)
 
-set_seed(args.seed)
+# set_seed(args.seed)
 
-baseline_relu1 = nn.ReLU()
-# baseline_relu2 = nn.ReLU()
+# baseline_relu1 = nn.ReLU()
+# # baseline_relu2 = nn.ReLU()
 
-critic_base = nn.Sequential(
-    nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),  # 0
-    nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
-    baseline_relu1,                           # 1
-    nn.Linear(PRE_FTA_DIM, 1),     # 2
-    # baseline_relu2,                           # 3
-    # nn.Linear(PRE_FTA_DIM, 1),               # 4
-)
-print(f'\n{critic_base}')
+# critic_base = nn.Sequential(
+#     nn.Linear(N_PLACE_CELLS, PRE_FTA_DIM),  # 0
+#     nn.LayerNorm(PRE_FTA_DIM, elementwise_affine=False), # 1: non-adaptive
+#     baseline_relu1,                           # 1
+#     nn.Linear(PRE_FTA_DIM, 1),     # 2
+#     # baseline_relu2,                           # 3
+#     # nn.Linear(PRE_FTA_DIM, 1),               # 4
+# )
+# print(f'\n{critic_base}')
 
-actor_base_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
+# actor_base_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_base = ExperimentConfig(label='ReLU_20_units', n_episodes=N_EPISODES, eta=ETA)
-env_b, ag_b = _make_env_and_agent(cfg_base)
-env_b = get_environment(env_b, shape=args.env_shape)
-pc_b = PlaceCells(ag_b, params={'n': N_PLACE_CELLS})
+# cfg_base = ExperimentConfig(label='ReLU_20_units', n_episodes=N_EPISODES, eta=ETA)
+# env_b, ag_b = _make_env_and_agent(cfg_base)
+# env_b = get_environment(env_b, shape=args.env_shape)
+# pc_b = PlaceCells(ag_b, params={'n': N_PLACE_CELLS})
 
-opt_fn_b = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
-actor_b = Actor(ag_b, params={'n':2,'input_layers': [pc_b], 'NeuralNetworkModule': actor_base_nn,
-                              'tau': cfg_base.tau, 'tau_z': cfg_base.tau_e, 'optimizer': opt_fn_b})
-critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModule': critic_base,
-                                'tau': cfg_base.tau, 'tau_z': cfg_base.tau_e, 'optimizer': opt_fn_b})
+# opt_fn_b = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
+# actor_b = Actor(ag_b, params={'n':2,'input_layers': [pc_b], 'NeuralNetworkModule': actor_base_nn,
+#                               'tau': cfg_base.tau, 'tau_z': cfg_base.tau_e, 'optimizer': opt_fn_b})
+# critic_b = Critic(ag_b, params={'n':1,'input_layers': [pc_b], 'NeuralNetworkModule': critic_base,
+#                                 'tau': cfg_base.tau, 'tau_z': cfg_base.tau_e, 'optimizer': opt_fn_b})
 
 
 
-print(f"Starting experiment") 
+# print(f"Starting experiment") 
 
-run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape, seed = args.seed)
+# run_experiment(env_b, ag_b, pc_b, actor_b, critic_b, n_bins=20, experiment_cfg=cfg_base, env_shape=args.env_shape, seed = args.seed)
 
 # ══════════════════════════════════════════════════════════════════════════
 # Baseline agent ReLU 220 units
@@ -449,43 +449,43 @@ run_experiment(env_b_220, ag_b_220, pc_b_220, actor_b_220, critic_b_220, n_bins=
 # Baseline agent ReLU - ReLU 220 units
 # ══════════════════════════════════════════════════════════════════════════
 
-print("\n" + "=" * 60)
-print("Baseline agent Double ReLU 220 units")
-print("=" * 60)
+# print("\n" + "=" * 60)
+# print("Baseline agent Double ReLU 220 units")
+# print("=" * 60)
 
-set_seed(args.seed)
+# set_seed(args.seed)
 
-baseline_double_relu_1 = nn.ReLU()
-baseline_double_relu_2 = nn.ReLU()
-# baseline_relu2 = nn.ReLU()
+# baseline_double_relu_1 = nn.ReLU()
+# baseline_double_relu_2 = nn.ReLU()
+# # baseline_relu2 = nn.ReLU()
 
-critic_double_relu = nn.Sequential(
-    nn.Linear(N_PLACE_CELLS, 20),  # 0
-    baseline_double_relu_1,                           # 1
-    nn.Linear(20, 220),     # 2
-    nn.LayerNorm(220, elementwise_affine=False),
-    baseline_double_relu_2,                           # 3
-    nn.Linear(220, 1),               # 4
-)
-print(f'\n{critic_double_relu}')
+# critic_double_relu = nn.Sequential(
+#     nn.Linear(N_PLACE_CELLS, 20),  # 0
+#     baseline_double_relu_1,                           # 1
+#     nn.Linear(20, 220),     # 2
+#     nn.LayerNorm(220, elementwise_affine=False),
+#     baseline_double_relu_2,                           # 3
+#     nn.Linear(220, 1),               # 4
+# )
+# print(f'\n{critic_double_relu}')
 
-actor_double_relu_220_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
+# actor_double_relu_220_nn = VxVyGaussianHead(Backbone(n_in=N_PLACE_CELLS, n_out=2, hidden=[50]))
 
-cfg_double_relu_220 = ExperimentConfig(label='Double_ReLU_220_units', n_episodes=N_EPISODES, eta=ETA)
-env_double_relu_220, ag_double_relu_220 = _make_env_and_agent(cfg_double_relu_220)
-env_double_relu_220 = get_environment(env_double_relu_220, shape=args.env_shape)
-pc_double_relu_220 = PlaceCells(ag_double_relu_220, params={'n': N_PLACE_CELLS})
+# cfg_double_relu_220 = ExperimentConfig(label='Double_ReLU_220_units', n_episodes=N_EPISODES, eta=ETA)
+# env_double_relu_220, ag_double_relu_220 = _make_env_and_agent(cfg_double_relu_220)
+# env_double_relu_220 = get_environment(env_double_relu_220, shape=args.env_shape)
+# pc_double_relu_220 = PlaceCells(ag_double_relu_220, params={'n': N_PLACE_CELLS})
 
-opt_fn_double_220 = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
-actor_double_relu_220 = Actor(ag_double_relu_220, params={'n':2,'input_layers': [pc_double_relu_220], 'NeuralNetworkModule': actor_double_relu_220_nn,
-                              'tau': cfg_double_relu_220.tau, 'tau_z': cfg_double_relu_220.tau_e, 'optimizer': opt_fn_double_220})
-critic_double_relu_220 = Critic(ag_double_relu_220, params={'n':1,'input_layers': [pc_double_relu_220], 'NeuralNetworkModule': critic_double_relu,
-                                'tau': cfg_double_relu_220.tau, 'tau_z': cfg_double_relu_220.tau_e, 'optimizer': opt_fn_double_220})
+# opt_fn_double_220 = lambda p: torch.optim.SGD(p, lr=ETA, maximize=True)
+# actor_double_relu_220 = Actor(ag_double_relu_220, params={'n':2,'input_layers': [pc_double_relu_220], 'NeuralNetworkModule': actor_double_relu_220_nn,
+#                               'tau': cfg_double_relu_220.tau, 'tau_z': cfg_double_relu_220.tau_e, 'optimizer': opt_fn_double_220})
+# critic_double_relu_220 = Critic(ag_double_relu_220, params={'n':1,'input_layers': [pc_double_relu_220], 'NeuralNetworkModule': critic_double_relu,
+#                                 'tau': cfg_double_relu_220.tau, 'tau_z': cfg_double_relu_220.tau_e, 'optimizer': opt_fn_double_220})
 
 
-print(f"Starting experiment") 
+# print(f"Starting experiment") 
 
-run_experiment(env_double_relu_220, ag_double_relu_220, pc_double_relu_220, actor_double_relu_220, critic_double_relu_220, n_bins=220, experiment_cfg=cfg_double_relu_220, env_shape=args.env_shape, seed = args.seed,)
+# run_experiment(env_double_relu_220, ag_double_relu_220, pc_double_relu_220, actor_double_relu_220, critic_double_relu_220, n_bins=220, experiment_cfg=cfg_double_relu_220, env_shape=args.env_shape, seed = args.seed,)
 
 
 print('\nDone!')

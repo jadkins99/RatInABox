@@ -266,6 +266,9 @@ def compute_rate_maps_single(
     position = np.array([s for ep in states for s in ep])
     trace    = np.array([o for ep in out_arrays for o in ep])
 
+    print("trace min:", trace.min())
+    print("trace max:", np.max(trace))
+
     n_units = trace.shape[1]
     T = trace.shape[0]
 
